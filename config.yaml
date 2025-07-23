@@ -1,12 +1,14 @@
+# all websites we will use their data
 weather_websites:
   SoDa: https://soda.dit.uop.gr/
   WeatherUnderground: https://www.wunderground.com/
   Meteo: https://meteo.gr/
 
-check_station_availability: True
-get_weather_basic_data: True
-get_weather_measurements: True
+check_station_availability: True # checks if station is offline or online
+get_weather_basic_data: True # if True, include items from 'weather_live_basic_data' in the scraping process
+get_weather_measurements: True # if True, include items from 'weather_live_conditions_measurements' in the scraping process
 
+# defines the basic fields collected for each weather record
 weather_live_basic_data:
   - source
   - city
@@ -14,6 +16,7 @@ weather_live_basic_data:
   - day
   - hour
 
+# defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
 weather_live_conditions_measurements:
   - Temperature
@@ -27,47 +30,71 @@ weather_live_conditions_measurements:
   - Storm Total
   - Heat Index
 
+# farms information
+# each station must include 'url', 'source', and 'city' fields
 farms:
   farm1: # Tegea, Arkadia, Greece
+
+    # station 1 for farm 1
     - url: 'https://stations.sodasense.uop.gr/'
+      city: TODO
       source: soda
-    
+
+    # station 2 for farm 1
     - url: 'https://stations.sodasense.uop.gr/'
+      city: TODO
       source: soda
       
+    # station 3 for farm 1
     - url: 'https://stations.sodasense.uop.gr/'
+      city: TODO
       source: soda
     
+    # station 4 for farm 1
     - url: 'https://www.wunderground.com/weather/IMAGOU3'
+      city: TODO
       source: wunderground
 
   farm2: # Paparis, Arkadia, Greece
+    
+    # station 1 for farm 2
     - url: 'https://www.wunderground.com/weather/IASSEA3'
+      city: TODO
       source: soda
 
+    # station 2 for farm 2
     - url: 'https://penteli.meteo.gr/stations/voutsaras/'
-      source: soda
       city: Voutsaras (Arkadia)
+      source: soda
 
   farm3: # Agricultural University, Athens, Greece
+
+    # station 1 for farm 3
     - url: https://penteli.meteo.gr/stations/athens/
       city: Gazi (Athens)
       source: meteo
 
+    # station 2 for farm 3
     - url: https://www.wunderground.com/weather/IATHEN112
+      city: TODO
       source: wunderground
 
+    # station 3 for farm 3
     - url: https://penteli.meteo.gr/stations/peristeri/
       city: Peristeri (Athens)
       source: meteo
 
+    # station 4 for farm 3
     - url: https://www.wunderground.com/weather/IAEGAL9
+      city: TODO
       source: wunderground
+  
+  farm4: # TODO: new farm 
 
 API_KEYS:
   soda_api: SODA_API_KEY
 
-# paths
+# all paths used for extracting specific information from the meteo website (extracted from the website HTML)
 meteo_live_data:
   offline_station_check: //div[contains(@class, "offline boxshadow")]/span/text()
   get_day_and_hour: .//div[contains(@class, "headline gradient")]/span[2]/text()
