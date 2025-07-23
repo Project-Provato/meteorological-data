@@ -1,0 +1,76 @@
+weather_websites:
+  SoDa: https://soda.dit.uop.gr/
+  WeatherUnderground: https://www.wunderground.com/
+  Meteo: https://meteo.gr/
+
+check_station_availability: True
+get_weather_basic_data: True
+get_weather_measurements: True
+
+weather_live_basic_data:
+  - source
+  - city
+  - timecrawl
+  - day
+  - hour
+
+# comment to remove or uncomment to add measurement
+weather_live_conditions_measurements:
+  - Temperature
+  - Humidity
+  - Wind
+  - Wind Speed
+  - Wind Direction
+  - Barometer
+  - Today's Rain
+  - Rain Rate
+  - Storm Total
+  - Heat Index
+
+farms:
+  farm1: # Tegea, Arkadia, Greece
+    - url: 'https://stations.sodasense.uop.gr/'
+      source: soda
+    
+    - url: 'https://stations.sodasense.uop.gr/'
+      source: soda
+      
+    - url: 'https://stations.sodasense.uop.gr/'
+      source: soda
+    
+    - url: 'https://www.wunderground.com/weather/IMAGOU3'
+      source: wunderground
+
+  farm2: # Paparis, Arkadia, Greece
+    - url: 'https://www.wunderground.com/weather/IASSEA3'
+      source: soda
+
+    - url: 'https://penteli.meteo.gr/stations/voutsaras/'
+      source: soda
+      city: Voutsaras (Arkadia)
+
+  farm3: # Agricultural University, Athens, Greece
+    - url: https://penteli.meteo.gr/stations/athens/
+      city: Gazi (Athens)
+      source: meteo
+
+    - url: https://www.wunderground.com/weather/IATHEN112
+      source: wunderground
+
+    - url: https://penteli.meteo.gr/stations/peristeri/
+      city: Peristeri (Athens)
+      source: meteo
+
+    - url: https://www.wunderground.com/weather/IAEGAL9
+      source: wunderground
+
+API_KEYS:
+  soda_api: SODA_API_KEY
+
+# paths
+meteo_live_data:
+  offline_station_check: //div[contains(@class, "offline boxshadow")]/span/text()
+  get_day_and_hour: .//div[contains(@class, "headline gradient")]/span[2]/text()
+  get_data_table: //div[@class="col_sub dist boxshadow realtime"]//div[@class="line"] # table = data from meteo
+  get_data_table_label: .//div[@class="lleft"]/span[1]/text()
+  get_data_table_value: .//div[@class="lright"]/span/text()
