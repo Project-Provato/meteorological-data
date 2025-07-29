@@ -40,6 +40,16 @@ weather_live_conditions_measurements:
   - heat index
   - pressure
 
+results_units:
+  temperature: celsius
+  humidity: percentage
+  wind_speed: km/h
+  wind_direction: null
+  rainfall: mm
+  weather_conditions: null
+  heat_index: celsius
+  pressure: hpa
+
 # farms information
 # each station must include 'url', 'source', and 'city' fields
 farms:
