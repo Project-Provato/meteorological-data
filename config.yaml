@@ -24,8 +24,9 @@ weather_live_basic_data:
   - source
   - city
   - timecrawl
-  - day
-  - hour
+  - last_station_update
+  - farm_number
+  - station_number
 
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
