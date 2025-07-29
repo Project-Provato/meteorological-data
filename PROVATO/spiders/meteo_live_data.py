@@ -79,7 +79,9 @@ class Meteo_Live_Data(scrapy.Spider):
             value = value.strip()
 
             if 'wind' in measurement and label == 'wind' and 'speed' in measurement:
-                return {measurement: value.split(' ')[0]}
+                value = value.split(' ')
+
+                return {measurement: f"{value[0] + value[1]}"}
             
             if 'wind' in measurement and label == 'wind' and 'direction' in measurement:
                 return {measurement: value.split(' ')[3]}
