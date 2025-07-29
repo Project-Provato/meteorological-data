@@ -105,8 +105,8 @@ API_KEYS:
   soda_api: SODA_API_KEY
 
 # all paths used for extracting specific information from the meteo website (extracted from the website HTML)
-meteo_live_data:
-  offline_station_check: //div[contains(@class, "offline boxshadow")]/span/text()
+meteo_live_data_paths:
+  station_availability: //div[contains(@class, "offline boxshadow")]/span/text()
   get_day_and_hour: .//div[contains(@class, "headline gradient")]/span[2]/text()
   get_data_table: //div[@class="col_sub dist boxshadow realtime"]//div[@class="line"] # table = data from meteo
   get_data_table_label: .//div[@class="lleft"]/span[1]/text()
