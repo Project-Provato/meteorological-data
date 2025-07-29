@@ -44,8 +44,9 @@ class Meteo_Live_Data(scrapy.Spider):
         source = response.meta['source']
         city = response.meta['city']
         timecrawl = dt.now()
-        day = convert_day(self.get_day_and_hour(response))
-        hour = convert_hour(self.get_day_and_hour(response))
+        farm_number = response.meta['farm_number']
+        station_number = response.meta['station_number']
+        last_station_update = self.get_day_and_hour(response)
 
         if self.config['get_weather_basic_data'] is True:
             all_measurements = {
