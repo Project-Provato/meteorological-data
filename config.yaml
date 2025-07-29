@@ -30,16 +30,14 @@ weather_live_basic_data:
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
 weather_live_conditions_measurements:
-  - Temperature
-  - Humidity
-  - Wind
-  - Wind Speed
-  - Wind Direction
-  - Barometer
-  - Today's Rain
-  - Rain Rate
-  - Storm Total
-  - Heat Index
+  - temperature
+  - humidity
+  - wind_speed
+  - wind_direction
+  - rainfall
+  - weather_conditions
+  - heat index
+  - pressure
 
 # farms information
 # each station must include 'url', 'source', and 'city' fields
