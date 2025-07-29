@@ -1,9 +1,19 @@
 # all websites we will use their data
 weather_websites:
-  SoDa: https://soda.dit.uop.gr/
-  WeatherUnderground: https://www.wunderground.com/
-  Meteo: https://meteo.gr/
+  - source: SoDa
+    url: https://soda.dit.uop.gr/
+    code: soda
+    spider_name: soda_live_data
 
+  - source: WeatherUnderground
+    url: https://www.wunderground.com/
+    code: wu
+    spider_name: wu_live_data
+
+  - source: Meteo
+    url: https://meteo.gr/
+    code: meteo
+    spider_name: meteo_live_data
 check_station_availability: True # checks if station is offline or online
 get_weather_basic_data: True # if True, include items from 'weather_live_basic_data' in the scraping process
 get_weather_measurements: True # if True, include items from 'weather_live_conditions_measurements' in the scraping process
