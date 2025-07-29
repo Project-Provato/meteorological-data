@@ -1,8 +1,8 @@
+from dotenv import load_dotenv
+load_dotenv() # load environment variables
+
 import scrapy, psycopg2, os, yaml
 from datetime import datetime as dt
-from dotenv import load_dotenv
-
-load_dotenv() # load environment variables
 
 from ..functions_general.functions import convert_day, convert_hour
 
@@ -31,7 +31,7 @@ class Meteo_Live_Data(scrapy.Spider):
     def init_check_station_availability(self, response):
         # checks if station is offline or online 
         
-        if response.xpath(self.config['meteo_live_data']['offline_station_check']).get() is not None:
+        if response.xpath(self.config['meteo_live_data_paths']['station_availability']).get() is not None:
             print("Station is offline, skipping...")
             return True
         
@@ -67,10 +67,10 @@ class Meteo_Live_Data(scrapy.Spider):
         # we check if the data from meteo contains the words that we have specified in the config, in the 'weather_live_conditions_measurements' field
 
         for row in self.get_data_table(response):
-            label = row.xpath(self.config['meteo_live_data']['get_data_table_label']).get()
-            value = row.xpath(self.config['meteo_live_data']['get_data_table_value']).get()
+            label = row.xpath(self.config['meteo_live_data_paths']['get_data_table_label']).get()
+            value = row.xpath(self.config['meteo_live_data_paths']['get_data_table_value']).get()
 
-            if row is None or label is None or label is None:
+            if row is None or label is None or value is None:
                 continue
 
             label = label.lower()
@@ -91,12 +91,12 @@ class Meteo_Live_Data(scrapy.Spider):
     def get_data_table(self, response):
         # method for retrieving the data table from meteo
 
-        return response.xpath(self.config['meteo_live_data']['get_data_table'])
+        return response.xpath(self.config['meteo_live_data_paths']['get_data_table'])
     
     def get_day_and_hour(self, response):
         # method for extracting the day and hour from the meteo table
 
-        return response.xpath(self.config['meteo_live_data']['get_day_and_hour']).get()
+        return response.xpath(self.config['meteo_live_data_paths']['get_day_and_hour']).get()
     
     def load_config(self):
         # method for loading the configuration file (config.yaml)
