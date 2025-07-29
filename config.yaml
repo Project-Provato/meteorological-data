@@ -101,3 +101,32 @@ meteo_live_data:
   get_data_table: //div[@class="col_sub dist boxshadow realtime"]//div[@class="line"] # table = data from meteo
   get_data_table_label: .//div[@class="lleft"]/span[1]/text()
   get_data_table_value: .//div[@class="lright"]/span/text()
+
+# all paths used for extracting specific information from the weather-underground website (extracted from the website HTML)
+weather-underground_live_data_paths:
+  station_availability: //div[@class="dashboard__title"]/div/span[1]/text()
+  get_last_updated: //div[@class="dashboard__title"]/div/span[2]/text()
+  get_day_and_hour: .//p[@class="timestamp"]/span[1]/strong/text()
+
+  temperature:
+    value: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span/text()'
+    unit: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span[@class="wu-label"]/span[2]/text()'
+  
+  wind_direction: './/div[contains(@class,"wind-compass")]/@style'
+  
+  wind_speed:
+    value: './/header[@class="wind-speed"]/strong/text()'
+    unit: './/span[@class="test-false wu-unit wu-unit-speed"]/span[@class="wu-label"]/span[2]/text()'
+  
+  humidity:
+    value: './/span[contains(@class,"test-false wu-unit wu-unit-humidity")]/span/text()'
+    unit: './/span[@class="test-false wu-unit wu-unit-humidity"]/span[@class="wu-label"]/span[2]/text()'
+
+  weather_conditions: './/div[contains(@class,"small-4 columns") and contains(text(), "Clouds")]/following-sibling::div/span/text()'
+  pressure:
+    value: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span/text()'
+    unit: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span[@class="wu-label"]/span[2]/text()'
+
+  rainfall:
+    value: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span/text()'
+    unit: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span[@class="wu-label"]/span[2]/text()'
