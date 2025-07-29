@@ -109,17 +109,19 @@ class Meteo_Live_Data(scrapy.Spider):
         # we check in the config in the farms field, which farm has meteo as the source, and we scrape using its URL
         # we provide the url, source, and city through the meta, so that we can use them as values for the basic fields we have defined for scraping. These basic data are defined in the config and set in the 'init_scraping_data' method
 
-        for farms, farm_data in self.config.get('farms').items():
-            meteo_stations = list(filter(lambda find_meteo: find_meteo.get('source') == 'meteo', farm_data))
+        for farm, farm_data in self.config.get('farms').items():
+            meteo_stations = list(filter(lambda find_meteo: find_meteo.get('code') == self.config['weather_websites'][2]['code'], farm_data))
 
             if meteo_stations is None:
                 return
             
             for station in meteo_stations:
+                meta_data = {}
+                
+                for item in self.config['weather_live_basic_data']:
+                    meta_data.update( {item: farm} ) if item == 'farm_number' else meta_data.update( {item: station.get(item)} )
+                
                 yield scrapy.Request(station.get('url'),
                                     self.parse,
-                                    meta = {'url': station.get('url'),
-                                            'source': station.get('source'),
-                                            'city': station.get('city')
-                                            })
+                                    meta = meta_data)
 
