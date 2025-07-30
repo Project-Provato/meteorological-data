@@ -55,17 +55,21 @@ class Meteo_Live_Data(scrapy.Spider):
             }
 
         if self.config['get_weather_measurements'] is True:
-            for measurement in self.config['weather_live_conditions_measurements']:
-                result = self.get_data_from_table(response, measurement) # returned data: {'measurement': 'value'}
+            for measurement, alternative_names in self.config['weather_live_conditions_measurements'].items():
+                print(measurement, alternative_names)
+                result = self.get_data_from_table(response, measurement, alternative_names) # returned data: {'measurement': 'value'}
 
                 if result is not None:
                     all_measurements.update(result)
 
         return all_measurements
 
-    def get_data_from_table(self, response, measurement):
+    def get_data_from_table(self, response, measurement, measurement_alternative_names):
         # this is the method where we retrieve the measurements from meteo
         # we check if the data from meteo contains the words that we have specified in the config, in the 'weather_live_conditions_measurements' field
+
+        measurement = measurement.lower()
+        measurement_alternative_names = [word.lower() for word in measurement_alternative_names]
 
         for row in self.get_data_table(response):
             label = row.xpath(self.config['meteo_live_data_paths']['get_data_table_label']).get()
@@ -75,18 +79,17 @@ class Meteo_Live_Data(scrapy.Spider):
                 continue
 
             label = label.lower()
-            measurement = measurement.lower()
             value = value.strip()
 
-            if 'wind' in measurement and label == 'wind' and 'speed' in measurement:
+            if 'wind' in measurement and label == 'wind' and 'speed' in measurement_alternative_names:
                 value = value.split(' ')
 
                 return {measurement: f"{value[0] + value[1]}"}
             
-            if 'wind' in measurement and label == 'wind' and 'direction' in measurement:
+            if 'wind' in measurement and label == 'wind' and 'direction' in measurement_alternative_names:
                 return {measurement: value.split(' ')[3]}
             
-            if label != measurement:
+            if label not in measurement_alternative_names:
                 continue
 
             return {measurement: value}
@@ -103,7 +106,6 @@ class Meteo_Live_Data(scrapy.Spider):
     
     def load_config(self):
         # method for loading the configuration file (config.yaml)
-
         with open(os.getenv('CONFIG'), 'r') as conf:
             return yaml.safe_load(conf)
         

@@ -42,8 +42,8 @@ class Meteo_Live_Data(scrapy.Spider):
         source = response.meta['source']
         city = response.meta['city']
         timecrawl = dt.now()
-        farm_number = response.meta['farm']
-        station_number = response.meta['station']
+        farm_number = response.meta['farm_number']
+        station_number = response.meta['station_number']
         last_station_update = self.get_day_and_hour(response)
 
         all_measurements = {}
@@ -53,8 +53,8 @@ class Meteo_Live_Data(scrapy.Spider):
                 key: locals()[key] for key in self.config['weather_live_basic_data']
             }
 
-        for measurement in self.config['weather_live_conditions_measurements']:
-            measurement_data = self.get_data_from_table(response, measurement)
+        for measurement, alternative_names in self.config['weather_live_conditions_measurements'].items():
+            measurement_data = self.get_data_from_table(response, measurement, alternative_names)
 
             if measurement_data is None:
                 continue
@@ -68,33 +68,24 @@ class Meteo_Live_Data(scrapy.Spider):
     def get_day_and_hour(self, response):
         return response.xpath(self.config['weather-underground_live_data_paths']['get_day_and_hour']).get()
     
-    def get_data_from_table(self, response, measurement):
+    def get_data_from_table(self, response, measurement, measurement_alternative_names):
         measurement = measurement.lower()
+        measurement_alternative_names = [word.lower() for word in measurement_alternative_names]
 
-        measurement_map = {
-            'temperature': self.getTemperature,
-            'wind_direction': self.getWindDirection,
-            'wind_speed': self.getWindSpeed,
-            'humidity': self.getHumidity,
-            'weather_conditions': self.getWeatherCondition,
-            'pressure': self.getAirPressure,
-            'rainfall': self.getRainfall,
-        }
-
-        for item in measurement_map:
-            if not item in measurement:
+        for item in self.config['weather-underground_live_data_paths']:
+            if not item in measurement_alternative_names:
                 continue
 
-            return measurement_map[item](response, measurement)
-    
-    def getTemperature(self, response, measurement):
-        return self.get_value_and_unit(response, measurement)
-    
+            if item == 'wind_direction':
+                return self.getWindDirection(response, measurement)
+
+            return self.get_value_and_unit(response, measurement)
+
     def getWindDirection(self, response, measurement):
         # https://en.wikipedia.org/wiki/Cardinal_direction
         # https://en.wikipedia.org/wiki/Compass_rose
         # https://stackoverflow.com/questions/7490660/converting-wind-direction-in-angles-to-text-words
-        path = response.xpath(self.config['weather-underground_live_data_paths'][measurement]).get()
+        path = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
         match_with_path = re.search(r'rotate\(([\d.]+)deg\)', path)
 
         if not match_with_path:
@@ -112,28 +103,17 @@ class Meteo_Live_Data(scrapy.Spider):
         sector = int((degrees + 11.25) // 22.5) % 16
         
         return compass_sectors[sector]
-
-    def getWindSpeed(self, response, measurement):
-        return self.get_value_and_unit(response, measurement)
-
-    def getHumidity(self, response, measurement):
-        return self.get_value_and_unit(response, measurement)
-
-    def getWeatherCondition(self, response, measurement):
-        return response.xpath(self.config['weather-underground_live_data_paths'][measurement]).get()
-    
-    def getAirPressure(self, response, measurement):
-        return self.get_value_and_unit(response, measurement)
-    
-    def getRainfall(self, response, measurement):
-        return self.get_value_and_unit(response, measurement)
     
     def get_value_and_unit(self, response, measurement):
         value = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
-        unit = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['unit']).get()
 
-        if value is None or unit is None:
+        if value is None:
             return None
+        
+        if self.config['weather-underground_live_data_paths'][measurement]['unit'] is None:
+            return value
+        
+        unit = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['unit']).get()
 
         return f"{value + unit}"
     
@@ -160,7 +140,5 @@ class Meteo_Live_Data(scrapy.Spider):
                 for item in self.config['weather_live_basic_data']:
                     meta_data.update( {item: farm} ) if item == 'farm_number' else meta_data.update( {item: station.get(item)} )
                 
-                yield scrapy.Request(station.get('url'),
-                                    self.parse,
-                                    meta = meta_data)
+                yield scrapy.Request(station.get('url'), self.parse, meta = meta_data)
 

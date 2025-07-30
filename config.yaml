@@ -31,14 +31,14 @@ weather_live_basic_data:
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
 weather_live_conditions_measurements:
-  - temperature
-  - humidity
-  - wind_speed
-  - wind_direction
-  - rainfall
-  - weather_conditions
-  - heat index
-  - pressure
+  temperature: [temperature]
+  humidity: [humidity]
+  wind_speed: [wind_speed, speed, wind speed]
+  wind_direction: [direction, wind_direction, wind direction]
+  rainfall: [today's rain, today's_rain, today rain]
+  weather_conditions: [weather_conditions]
+  heat_index: [heat_index, heat index]
+  pressure: [pressure, barometer]
 
 results_units:
   temperature: celsius
@@ -146,8 +146,10 @@ weather-underground_live_data_paths:
     value: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span/text()'
     unit: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span[@class="wu-label"]/span[2]/text()'
   
-  wind_direction: './/div[contains(@class,"wind-compass")]/@style'
-  
+  wind_direction:
+    value: './/div[contains(@class,"wind-compass")]/@style'
+    unit: null
+
   wind_speed:
     value: './/header[@class="wind-speed"]/strong/text()'
     unit: './/span[@class="test-false wu-unit wu-unit-speed"]/span[@class="wu-label"]/span[2]/text()'
@@ -156,7 +158,10 @@ weather-underground_live_data_paths:
     value: './/span[contains(@class,"test-false wu-unit wu-unit-humidity")]/span/text()'
     unit: './/span[@class="test-false wu-unit wu-unit-humidity"]/span[@class="wu-label"]/span[2]/text()'
 
-  weather_conditions: './/div[contains(@class,"small-4 columns") and contains(text(), "Clouds")]/following-sibling::div/span/text()'
+  weather_conditions:
+    value: './/div[contains(@class,"small-4 columns") and contains(text(), "Clouds")]/following-sibling::div/span/text()'
+    unit: null
+  
   pressure:
     value: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span/text()'
     unit: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span[@class="wu-label"]/span[2]/text()'
