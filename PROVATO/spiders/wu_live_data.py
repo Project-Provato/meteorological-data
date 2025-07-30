@@ -10,7 +10,6 @@ class Meteo_Live_Data(scrapy.Spider):
     name = os.path.splitext(os.path.basename(__file__))[0] # specifies the spider name, using the file name without the .py extension
 
     def __init__(self):
-
         # loads the configuration file during class initialization
         self.config = self.load_config()
 
@@ -145,7 +144,7 @@ class Meteo_Live_Data(scrapy.Spider):
         # method where scraping begins in scrapy
         # we check in the config in the farms field, which farm has weather-underground as the source, and we scrape using its URL
         # we provide the url, source, and city through the meta, so that we can use them as values for the basic fields we have defined for scraping. These basic data are defined in the config and set in the 'init_scraping_data' method
-        for farms, farm_data in self.config.get('farms').items():
+        for farm, farm_data in self.config.get('farms').items():
             websites = self.config['weather_websites']
 
             wu_stations = list(filter(lambda find_wu: find_wu.get('code') == websites[1]['code'], farm_data))
@@ -153,11 +152,13 @@ class Meteo_Live_Data(scrapy.Spider):
             if wu_stations is None:
                 return
             
-            for station in wu_stations:
+            for station in wu_stations:                
+                meta_data = {}
+                
+                for item in self.config['weather_live_basic_data']:
+                    meta_data.update( {item: farm} ) if item == 'farm_number' else meta_data.update( {item: station.get(item)} )
+                
                 yield scrapy.Request(station.get('url'),
                                     self.parse,
-                                    meta = {'url': station.get('url'),
-                                            'source': station.get('source'),
-                                            'city': station.get('city')
-                                            })
+                                    meta = meta_data)
 
