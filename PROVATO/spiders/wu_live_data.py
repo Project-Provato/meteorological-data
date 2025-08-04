@@ -85,21 +85,10 @@ class Meteo_Live_Data(scrapy.Spider):
         path = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
         match_with_path = re.search(r'rotate\(([\d.]+)deg\)', path)
 
-        if not match_with_path:
+        if match_with_path is None:
             return None
 
-        degrees = float(match_with_path.group(1))
-
-        compass_sectors = [
-            "N", "NNE", "NE", "ENE",
-            "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW",
-            "W", "WNW", "NW", "NNW"
-        ]
-        
-        sector = int((degrees + 11.25) // 22.5) % 16
-        
-        return compass_sectors[sector]
+        return float(match_with_path.group(1)) # degrees
     
     def get_value_and_unit(self, response, measurement):
         value = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
