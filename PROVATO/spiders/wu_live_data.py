@@ -1,10 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
-import scrapy, psycopg2, os, yaml, re
+import scrapy, os, yaml, re
 from datetime import datetime as dt
-
-from ..functions_general.functions import convert_day, convert_hour, convertWindDir
 
 class Meteo_Live_Data(scrapy.Spider):
     name = os.path.splitext(os.path.basename(__file__))[0] # specifies the spider name, using the file name without the .py extension
@@ -15,7 +13,6 @@ class Meteo_Live_Data(scrapy.Spider):
 
     def parse(self, response): 
         # for every website we scrape, requests are initiated via the 'start_requests' method and each response is processed and returned via the 'parse' method
-
         # if self.config['check_station_availability'] is True:
         #     if self.init_check_station_availability(response) is True:
         #         return
@@ -38,13 +35,12 @@ class Meteo_Live_Data(scrapy.Spider):
 
     def init_scraping_data(self, response):
         # this is the method that initializes the basic data and measurements to be retrieved from weather-underground
-        # it checks from the config if we can retrieve the basic data and the measurement. If it is true, all the basic data and all the measurements for each station are collected using the 'get_data_from_table' method
+        # it checks from the config if we can retrieve the basic data and the measurement. If it is true, all the basic data and all the measurements for each station are collected using the 'get_data_from_wu' method
         source = response.meta['source']
+        farm = response.meta['farm']
+        timedata = self.get_day_and_hour(response)
+        crawled = dt.now()
         city = response.meta['city']
-        timecrawl = dt.now()
-        farm_number = response.meta['farm_number']
-        station_number = response.meta['station_number']
-        last_station_update = self.get_day_and_hour(response)
 
         all_measurements = {}
 
@@ -54,7 +50,7 @@ class Meteo_Live_Data(scrapy.Spider):
             }
 
         for measurement, alternative_names in self.config['weather_live_conditions_measurements'].items():
-            measurement_data = self.get_data_from_table(response, measurement, alternative_names)
+            measurement_data = self.get_data_from_wu(response, measurement, alternative_names)
 
             if measurement_data is None:
                 continue
@@ -68,7 +64,7 @@ class Meteo_Live_Data(scrapy.Spider):
     def get_day_and_hour(self, response):
         return response.xpath(self.config['weather-underground_live_data_paths']['get_day_and_hour']).get()
     
-    def get_data_from_table(self, response, measurement, measurement_alternative_names):
+    def get_data_from_wu(self, response, measurement, measurement_alternative_names):
         measurement = measurement.lower()
         measurement_alternative_names = [word.lower() for word in measurement_alternative_names]
 
@@ -77,11 +73,11 @@ class Meteo_Live_Data(scrapy.Spider):
                 continue
 
             if item == 'wind_direction':
-                return self.getWindDirection(response, measurement)
+                return self.get_wind_direction(response, measurement)
 
             return self.get_value_and_unit(response, measurement)
 
-    def getWindDirection(self, response, measurement):
+    def get_wind_direction(self, response, measurement):
         # https://en.wikipedia.org/wiki/Cardinal_direction
         # https://en.wikipedia.org/wiki/Compass_rose
         # https://stackoverflow.com/questions/7490660/converting-wind-direction-in-angles-to-text-words
@@ -138,7 +134,7 @@ class Meteo_Live_Data(scrapy.Spider):
                 meta_data = {}
                 
                 for item in self.config['weather_live_basic_data']:
-                    meta_data.update( {item: farm} ) if item == 'farm_number' else meta_data.update( {item: station.get(item)} )
+                    meta_data.update( {item: farm} ) if item == 'farm' else meta_data.update( {item: station.get(item)} )
                 
                 yield scrapy.Request(station.get('url'), self.parse, meta = meta_data)
 
