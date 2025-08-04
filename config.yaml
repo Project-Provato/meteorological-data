@@ -58,25 +58,24 @@ farms:
 
     # station 1 for farm 1
     - url: SODA_FARM1_STATION1
-      city: TODO
+      city: Λίμνη Τάκα
+      nomos: Αρκαδίας
       code: soda
+      source: SoDa
       station_number: 1
 
     # station 2 for farm 1
     - url: SODA_FARM1_STATION2
-      city: TODO
+      city: Τεγέα
+      nomos: Αρκαδίας
       code: soda
+      source: SoDa
       station_number: 2
-      
-    # station 3 for farm 1
-    - url: SODA_FARM1_STATION3
-      city: TODO
-      code: soda
-      station_number: 3
     
     # station 4 for farm 1
-    - url: 'https://www.wunderground.com/weather/IMAGOU3'
-      city: TODO
+    - url: https://www.wunderground.com/weather/IMAGOU3
+      city: Μαγούλα
+      nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
       station_number: 4
@@ -84,45 +83,51 @@ farms:
   farm2: # Paparis, Arkadia, Greece
     
     # station 1 for farm 2
-    - url: 'https://www.wunderground.com/weather/IASSEA3'
-      city: TODO
+    - url: https://www.wunderground.com/weather/IASSEA3
+      city: Πάπαρης
+      nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
       station_number: 1
 
     # station 2 for farm 2
-    - url: 'https://penteli.meteo.gr/stations/voutsaras/'
-      city: Voutsaras (Arkadia)
+    - url: https://penteli.meteo.gr/stations/voutsaras/
+      city: Βουτσαράς
+      nomos: Αρκαδίας
       code: meteo
       source: Meteo
-      station_number: '2'
+      station_number: 2
 
   farm3: # Agricultural University, Athens, Greece
 
     # station 1 for farm 3
     - url: https://penteli.meteo.gr/stations/athens/
-      city: Gazi (Athens)
+      city: Γκάζι
+      nomos: Αττικής
       code: meteo
       source: Meteo
       station_number: 1
 
     # station 2 for farm 3
     - url: https://www.wunderground.com/weather/IATHEN112
-      city: TODO
+      city: Πετράλωνα
+      nomos: Αττικής
       code: wu
       source: WeatherUnderground
       station_number: 2
 
     # station 3 for farm 3
     - url: https://penteli.meteo.gr/stations/peristeri/
-      city: Peristeri (Athens)
+      city: Περιστέρι
+      nomos: Αττικής
       code: meteo
       source: Meteo
       station_number: 3
 
     # station 4 for farm 3
     - url: https://www.wunderground.com/weather/IAEGAL9
-      city: TODO
+      city: Αιγάλεω
+      nomos: Αττικής
       code: wu
       source: WeatherUnderground
       station_number: 4
