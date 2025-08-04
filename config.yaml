@@ -42,14 +42,14 @@ weather_live_conditions_measurements:
     # heat_index: [heat_index, heat index]
 
 results_units:
-  temperature: celsius
-  humidity: percentage
-  wind_speed: km/h
-  wind_direction: null
-  rainfall: mm
+  temperature: C # C = celsius
+  humidity: '%' # 
+  wind: km/h #
+  direction: null
+  yetos: mm #
+  barometer: hpa #
   weather_conditions: null
   heat_index: celsius
-  pressure: hpa
 
 # farms information
 # each station must include 'url', 'source', and 'city' fields
