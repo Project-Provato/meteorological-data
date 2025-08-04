@@ -34,12 +34,12 @@ weather_live_basic_data:
 weather_live_conditions_measurements:
   temperature: [temperature]
   humidity: [humidity]
-  wind_speed: [wind_speed, speed, wind speed]
-  wind_direction: [direction, wind_direction, wind direction]
-  rainfall: [today's rain, today's_rain, today rain]
+  wind: [wind, wind_speed, speed]
+  direction: [wind, wind_direction, direction]
+  yetos: [yetos, rainfall, today's rain, today's_rain]
+  barometer: [pressure, barometer]
   weather_conditions: [weather_conditions]
   heat_index: [heat_index, heat index]
-  pressure: [pressure, barometer]
 
 results_units:
   temperature: celsius
