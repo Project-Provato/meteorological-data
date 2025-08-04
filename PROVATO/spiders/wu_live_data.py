@@ -101,6 +101,9 @@ class Meteo_Live_Data(scrapy.Spider):
         
         unit = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['unit']).get()
 
+        if unit is None and measurement == 'wind':
+            unit = 'mph'
+
         return f"{value + unit}"
     
     def load_config(self):
