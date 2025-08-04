@@ -73,7 +73,7 @@ class Meteo_Live_Data(scrapy.Spider):
             if not item in measurement_alternative_names:
                 continue
 
-            if item == 'wind_direction':
+            if item == 'direction':
                 return self.get_wind_direction(response, measurement)
 
             return self.get_value_and_unit(response, measurement)
