@@ -21,12 +21,13 @@ get_weather_measurements: True # if True, include items from 'weather_live_condi
 
 # defines the basic fields collected for each weather record
 weather_live_basic_data:
+  - farm
   - source
+  - timedata
+  - crawled
   - city
-  - timecrawl
-  - last_station_update
-  - farm_number
-  - station_number
+  - nomos
+  # - station_number
 
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
