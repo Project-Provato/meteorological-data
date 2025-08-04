@@ -41,6 +41,7 @@ class Meteo_Live_Data(scrapy.Spider):
         timedata = self.get_day_and_hour(response)
         crawled = dt.now()
         city = response.meta['city']
+        nomos = response.meta['nomos']
 
         all_measurements = {}
 
