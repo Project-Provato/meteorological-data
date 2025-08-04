@@ -38,8 +38,6 @@ weather_live_conditions_measurements:
   direction: [wind, wind_direction, direction]
   yetos: [yetos, rainfall, today's rain, today's_rain]
   barometer: [pressure, barometer]
-    # weather_conditions: [weather_conditions]
-    # heat_index: [heat_index, heat index]
 
 results_units:
   temperature: C # C = celsius
@@ -48,8 +46,6 @@ results_units:
   direction: null
   yetos: mm #
   barometer: hpa #
-  weather_conditions: null
-  heat_index: celsius
 
 # farms information
 # each station must include 'url', 'source', and 'city' fields
