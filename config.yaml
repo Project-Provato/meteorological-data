@@ -128,7 +128,32 @@ farms:
       source: WeatherUnderground
       station_number: 4
   
-  # farm4: # TODO: new farm 
+  farm4:
+
+    # station 1 for farm 4
+    - url: https://www.wunderground.com/weather/gr/poullitsa/IPOULL5
+      city: Πουλίτσα
+      nomos: Κορινθίας
+      code: wu
+      source: WeatherUnderground
+      station_number: 1
+
+    # station 2 for farm 4
+    - url: https://penteli.meteo.gr/stations/assos/
+      city: Άσσος
+      nomos: Κορινθίας
+      code: meteo
+      source: Meteo
+      station_number: 2
+
+    # station 3 for farm 4
+    - url: https://www.wunderground.com/weather/gr/moulki/IMOULK1
+      city: Μούλκι
+      nomos: Κορινθίας
+      code: wu
+      source: WeatherUnderground
+      station_number: 3
+
 
 # all paths used for extracting specific information from the meteo website (extracted from the website HTML)
 meteo_live_data_paths:
