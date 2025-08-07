@@ -79,7 +79,7 @@ def find_record(measurement_label):
     return result, time
 
 def get_data_from_soda():
-    now = datetime.now().replace(second = 0, microsecond = 0)
+    now = datetime.now()
     start = now - timedelta(hours = 1, minutes = 45)
     
     start_date = start.strftime('%Y-%m-%d %H:%M:%S').replace(' ', '%20')
@@ -118,7 +118,7 @@ def get_data_from_soda():
                         farm = farms
                         source = station['source']
                         timedata = timestamp
-                        crawled = datetime.now()
+                        crawled = now
                         city = station['city']
                         nomos = station['nomos']
 
