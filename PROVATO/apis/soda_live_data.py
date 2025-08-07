@@ -129,13 +129,11 @@ def get_data_from_soda():
                                 key: locals()[key] for key in config['weather_live_basic_data']
                             }
 
-                        for key, value in record.items():
-                            all_measurements.update({key: value})
-
-                        values = list(all_measurements.values())
+                        for measurement, _ in config['weather_live_conditions_measurements'].items():
+                            all_measurements.update({measurement: record[measurement]})
 
                         with open(config['preprocessing']['soda']['staging'], 'a', encoding = 'utf-8', newline = '') as staging:
-                            csv.writer(staging).writerow(values)
+                            csv.writer(staging).writerow(all_measurements.values())
             except Exception as e:
                 print(f'Request failed: {e}')
 
