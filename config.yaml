@@ -206,3 +206,8 @@ preprocessing:
     staging: data/soda/staging.csv
     cleaned: data/soda/cleaned.csv
     failed: data/soda/failed.csv
+
+commands: # .../PROVATO$
+  meteo: scrapy crawl meteo_live_data -o data/meteo/staging.csv
+  wu: scrapy crawl wu_live_data -o data/wu/staging.csv
+  soda: python3 apis/soda_live_data.py
