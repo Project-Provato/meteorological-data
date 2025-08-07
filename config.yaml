@@ -190,3 +190,19 @@ soda_api_paths:
   barometer: [Pressione atmosferica, barometer, pressure, 2]
   humidity: [Umidità aria, humidity, 10]
   yetos: [Pioggia, yetos, 11]
+
+preprocessing:
+  meteo:
+    staging: data/meteo/staging.csv
+    cleaned: data/meteo/cleaned.csv
+    failed: data/meteo/failed.csv
+    
+  wu:
+    staging: data/wu/staging.csv
+    cleaned: data/wu/cleaned.csv
+    failed: data/wu/failed.csv
+
+  soda:
+    staging: data/soda/staging.csv
+    cleaned: data/soda/cleaned.csv
+    failed: data/soda/failed.csv
