@@ -52,7 +52,6 @@ results_units:
 farms:
   farm1: # Tegea, Arkadia, Greece
 
-    # station 1 for farm 1
     - url: SODA_FARM1_STATION1
       city: Λίμνη Τάκα
       nomos: Αρκαδίας
@@ -60,7 +59,6 @@ farms:
       source: SoDa
       station_number: 1
 
-    # station 2 for farm 1
     - url: SODA_FARM1_STATION2
       city: Τεγέα
       nomos: Αρκαδίας
@@ -68,7 +66,6 @@ farms:
       source: SoDa
       station_number: 2
     
-    # station 4 for farm 1
     - url: https://www.wunderground.com/weather/IMAGOU3
       city: Μαγούλα
       nomos: Αρκαδίας
@@ -78,7 +75,6 @@ farms:
 
   farm2: # Paparis, Arkadia, Greece
     
-    # station 1 for farm 2
     - url: https://www.wunderground.com/weather/IASSEA3
       city: Πάπαρης
       nomos: Αρκαδίας
@@ -86,7 +82,6 @@ farms:
       source: WeatherUnderground
       station_number: 1
 
-    # station 2 for farm 2
     - url: https://penteli.meteo.gr/stations/voutsaras/
       city: Βουτσαράς
       nomos: Αρκαδίας
@@ -96,7 +91,6 @@ farms:
 
   farm3: # Agricultural University, Athens, Greece
 
-    # station 1 for farm 3
     - url: https://penteli.meteo.gr/stations/athens/
       city: Γκάζι
       nomos: Αττικής
@@ -104,7 +98,6 @@ farms:
       source: Meteo
       station_number: 1
 
-    # station 2 for farm 3
     - url: https://www.wunderground.com/weather/IATHEN112
       city: Πετράλωνα
       nomos: Αττικής
@@ -112,7 +105,6 @@ farms:
       source: WeatherUnderground
       station_number: 2
 
-    # station 3 for farm 3
     - url: https://penteli.meteo.gr/stations/peristeri/
       city: Περιστέρι
       nomos: Αττικής
@@ -120,7 +112,6 @@ farms:
       source: Meteo
       station_number: 3
 
-    # station 4 for farm 3
     - url: https://www.wunderground.com/weather/IAEGAL9
       city: Αιγάλεω
       nomos: Αττικής
@@ -130,7 +121,6 @@ farms:
   
   farm4:
 
-    # station 1 for farm 4
     - url: https://www.wunderground.com/weather/gr/poullitsa/IPOULL5
       city: Πουλίτσα
       nomos: Κορινθίας
@@ -138,7 +128,6 @@ farms:
       source: WeatherUnderground
       station_number: 1
 
-    # station 2 for farm 4
     - url: https://penteli.meteo.gr/stations/assos/
       city: Άσσος
       nomos: Κορινθίας
@@ -146,7 +135,6 @@ farms:
       source: Meteo
       station_number: 2
 
-    # station 3 for farm 4
     - url: https://www.wunderground.com/weather/gr/moulki/IMOULK1
       city: Μούλκι
       nomos: Κορινθίας
@@ -192,3 +180,13 @@ weather-underground_live_data_paths:
   yetos:
     value: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span/text()'
     unit: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span[@class="wu-label"]/span[2]/text()'
+
+soda_api_paths:
+  weather_sensor_id_path: [17]
+
+  temperature: [Temperatura aria, temperature, 9]
+  direction: [Direzione vento, direction, 3]
+  wind: [Velocità vento, wind, 8]
+  barometer: [Pressione atmosferica, barometer, pressure, 2]
+  humidity: [Umidità aria, humidity, 10]
+  yetos: [Pioggia, yetos, 11]
