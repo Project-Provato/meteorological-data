@@ -139,3 +139,11 @@ def get_data_from_soda():
             except Exception as e:
                 print(f'Request failed: {e}')
 
+try:
+    with open(os.getenv('CONFIG'), 'r') as conf:
+        config = yaml.safe_load(conf)
+    
+    get_data_from_soda()
+except Exception as e:
+    print(e)
+
