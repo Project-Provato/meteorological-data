@@ -21,10 +21,7 @@ def process_row(row, source):
     row[6] = clean_temperature(row[6])
     row[7] = clean_humidity(row[7])
     row[8] = clean_wind_speed(row[8])
-
-    if source == 'meteo':
-        row[9] = clean_wind_direction(row[9])
-    
+    row[9] = clean_wind_direction(row[9])
     row[10] = clean_yetos(row[10])
     row[11] = clean_barometer(row[11])
 
@@ -147,6 +144,9 @@ def clean_wind_direction(direction):
     try:
         if direction is None:
             return None
+
+        if '°' in direction:
+            return direction.replace('°', '').strip()
         
         DIRECTION_TO_DEGREES = {
             'N': 0.0,
