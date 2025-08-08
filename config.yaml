@@ -194,18 +194,18 @@ soda_api_paths:
 preprocessing:
   meteo:
     staging: data/meteo/staging.csv
-    cleaned: data/meteo/cleaned.csv
-    failed: data/meteo/failed.csv
+    cleaned: data/meteo/cleaned
+    failed: data/meteo/failed
     
   wu:
     staging: data/wu/staging.csv
-    cleaned: data/wu/cleaned.csv
-    failed: data/wu/failed.csv
+    cleaned: data/wu/cleaned
+    failed: data/wu/failed
 
   soda:
     staging: data/soda/staging.csv
-    cleaned: data/soda/cleaned.csv
-    failed: data/soda/failed.csv
+    cleaned: data/soda/cleaned
+    failed: data/soda/failed
 
 commands: # .../PROVATO$
   meteo: scrapy crawl meteo_live_data -o data/meteo/staging.csv
