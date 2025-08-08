@@ -45,6 +45,7 @@ def find_record(measurement_label):
 
         for sensors in measurement_label.findall('sensore'):
             id_sensor = int(sensors.get('id'))
+            unit = sensors.get('unita')
 
             if id_sensor in possible_names:
                 value = None
@@ -58,7 +59,7 @@ def find_record(measurement_label):
                         time_difference = abs(dt - measurement_date)
                 
                         if time_difference <= tolerance and (min_time_difference is None or time_difference < min_time_difference):
-                            value = measurement.get('valore')
+                            value = f"{measurement.get('valore')}{unit}"
                             time = date_hour_path
                             min_time_difference = time_difference
                     except Exception as e:
@@ -80,7 +81,7 @@ def find_record(measurement_label):
 
 def get_data_from_soda():
     now = datetime.now()
-    start = now - timedelta(hours = 1, minutes = 45)
+    start = now - timedelta(hours = 1, minutes = 30)
     
     start_date = start.strftime('%Y-%m-%d %H:%M:%S').replace(' ', '%20')
     end_date = now.strftime('%Y-%m-%d %H:%M:%S').replace(' ', '%20')
