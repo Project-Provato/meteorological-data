@@ -4,284 +4,355 @@ load_dotenv() # load environment variables
 import csv, yaml, os, logging
 from datetime import datetime
 
-# --- TODO ---
-logging.basicConfig(
-    filename = '../../logger.txt',
-    level = logging.INFO,
-    format = '[%(asctime)s] %(levelname)s | %(message)s',
-    encoding = 'utf-8'
-)
+# # --- TODO ---
+# logging.basicConfig(
+#     filename = '../../logger.txt',
+#     level = logging.INFO,
+#     format = '[%(asctime)s] %(levelname)s | Preprocessing | %(message)s',
+#     encoding = 'utf-8'
+# )
 
-def process_row(row, config, source):
-    if len(row) != len(config['weather_live_basic_data']) + len(config['weather_live_conditions_measurements']):
-        return row
+def process_row(row, source):
+    if check_row_length(row) is True:
+        return row, 'error'
 
-    try:
-        if source == 'wu':
-            row[2] = row[2].replace('EEST', '').strip()
-
-            row_time = datetime.strptime(row[2], "%I:%M %p on %B %d, %Y")
-            cleaned = row_time.strftime("%Y-%m-%d %H:%M:%S.%f")
-
-            row[2] = cleaned
-        else:
-            if row[2] is not None:
-                dt = datetime.strptime(row[2], "%d/%m/%Y %H:%M") if source == 'meteo' else datetime.strptime(row[2], "%d-%m-%Y %H:%M:%S")
-                cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-                row[2] = cleaned
-    except Exception as e:
-        logging.error(f"Error with time converter ({source}): {row[2]} -> {e}")
-        
-        return row
-
-    row[0] = clean_farm(row[0], config)
-    row[6] = clean_temperature(row[6], config)
-    row[7] = clean_humidity(row[7], config)
-    row[8] = clean_wind_speed(row[8], config)
+    row[0] = clean_farm_number(row[0])
+    row[2] = clean_timedata(row[2], source)
+    row[6] = clean_temperature(row[6])
+    row[7] = clean_humidity(row[7])
+    row[8] = clean_wind_speed(row[8])
 
     if source == 'meteo':
-        row[9] = clean_wind_direction(row[9], config)
+        row[9] = clean_wind_direction(row[9])
     
-    row[10] = clean_rainfall(row[10], config)
-    row[11] = clean_pressure(row[11], config)
+    row[10] = clean_yetos(row[10])
+    row[11] = clean_barometer(row[11])
 
-    return row
+    check_cleaned = check_cleaned_row(row)
 
-def clean_farm(farm, config):
-    if farm is None:
-        return None
-    
-    return farm.split('farm')[1]
+    if check_cleaned is None:
+        return row, 'error'
 
-def clean_temperature(row, config):
-    units = config['results_units']['temperature'].lower()
+    return row, 'success'
 
-    if row is None or units is None:
-        return None
+def check_row_length(row):
+    return True if len(row) != (len(config['weather_live_basic_data']) + len(config['weather_live_conditions_measurements'])) else False
 
-    row = row.lower().strip()
+def clean_timedata(timedata, source):
+    try:
+        if timedata is None or source is None:
+            return None
 
-    if 'f' in row and units == 'c':
-        row = row.replace('f', '').strip()
-        row = round((float(row) - 32) / 1.8, 1)
+        cleaned = None
 
-    elif 'c' in row and units == 'c':
-        row = row.replace('°c', '').strip()
-
-    return row
-
-def clean_humidity(row, config):
-    units = config['results_units']['humidity'].lower()
-    
-    if row is None or units is None:
-        return None
-
-    row = row.lower().strip()
-
-    if '%' in row and units == '%':
-        row = row.replace('%', '').strip()
-
-    return row
-
-def clean_wind_speed(row, config):
-    units = config['results_units']['wind'].lower()
-    
-    if row is None or units is None:
+        if source == 'wu':
+            timedata = timedata.replace('EEST', '').strip()
+            row_time = datetime.strptime(timedata, "%I:%M %p on %B %d, %Y")
+            cleaned = row_time.strftime("%Y-%m-%d %H:%M:%S.%f")
+        elif source == 'meteo':
+            dt = datetime.strptime(timedata, "%d/%m/%Y %H:%M")
+            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+        elif source == 'soda':
+            dt = datetime.strptime(timedata, "%Y-%m-%d %H:%M:%S")
+            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+        
+        return cleaned
+    except Exception as e:
+        # logging.error(f"Error with time converter ({source}): {timedata} -> {e}")
+        
         return None
 
-    if row is not None:
-        row = row.lower().strip()
+def clean_farm_number(farm):
+    try:
+        if not 'farm' in farm:
+            return None
 
-    if units == 'km/h':
-        if 'km/h' in row:
-            row = float(row.replace('km/h', '').strip())
-        elif 'mph' in row:
-            row = float(row.replace('mph', '').strip())
-            row = row * 1.60934  # mph → km/h
-        elif 'm/s' in row:
-            row = float(row.replace('m/s', '').strip())
-            row = row * 3.6      # m/s → km/h
-        else:
-            try:
-                row = float(row)
-            except Exception:
-                return None
+        farm = farm.split('farm')
 
-    return round(row, 1)
+        if farm is None or not len(farm) == 2 or not 0 <= int(farm[1]) <= len(config['farms']):
+            return None
 
-def clean_wind_direction(direction, config):
-    units = config['results_units']['direction']
-    
-    if units is not None:
-        return direction
-    
-    DIRECTION_TO_DEGREES = {
-        'N': 0,
-        'NNE': 22.5,
-        'NE': 45,
-        'ENE': 67.5,
-        'E': 90,
-        'ESE': 112.5,
-        'SE': 135,
-        'SSE': 157.5,
-        'S': 180,
-        'SSW': 202.5,
-        'SW': 225,
-        'WSW': 247.5,
-        'W': 270,
-        'WNW': 292.5,
-        'NW': 315,
-        'NNW': 337.5,
-    }
+        return farm[1]
+    except Exception as e:
+        print(e)
 
-    direction = direction.strip().upper()
-
-    if not direction:
-        return direction
-    
-    return DIRECTION_TO_DEGREES.get(direction)
-
-def clean_rainfall(row, config):
-    units = config['results_units']['yetos'].lower()
-    
-    if row is None or units is None:
         return None
 
-    if row is not None:
-        row = row.lower().strip()
+def clean_temperature(temperature):
+    try:
+        units = get_units('temperature')
+
+        if temperature is None or units is None:
+            return None
+
+        temperature, units = set_lower_and_strip(temperature, units)
+
+        if 'f' in temperature and units == 'c':
+            temperature = temperature.replace('f', '').strip()
+            temperature = round((float(temperature) - 32) / 1.8, 1)
+        elif 'c' in temperature and units == 'c':
+            temperature = temperature.replace('°c', '').strip()
+
+        return temperature
+    except Exception as e:
+        # logging.error(f"Temperature cleaning failed: 'temperature': {temperature} | 'units': {units} -> {e}")
+        
+        return None
+
+def clean_humidity(humidity):
+    try:
+        units = get_units('humidity')
+
+        if humidity is None or units is None:
+            return 'humidity is None'
+
+        humidity, units = set_lower_and_strip(humidity, units)
+
+        if '%' in humidity and units == '%':
+            humidity = humidity.replace('%', '').strip()
+
+        return humidity
+    except Exception as e:
+        # logging.error(f"Humidity cleaning failed: 'humidity': {temperature} | 'units': {units} -> {e}")
+        
+        return None
+
+def clean_wind_speed(wind):
+    try:
+        units = get_units('wind')
+        
+        if wind is None or units is None:
+            return None
+
+        wind, units = set_lower_and_strip(wind, units)
+
+        if units == 'km/h':
+            if 'km/h' in wind:
+                wind = float(wind.replace('km/h', '').strip())
+            elif 'mph' in wind:
+                wind = float(wind.replace('mph', '').strip())
+                wind = wind * 1.60934  # mph → km/h
+            elif 'm/s' in wind:
+                wind = float(wind.replace('m/s', '').strip())
+                wind = wind * 3.6      # m/s → km/h
+            else:
+                wind = float(wind)
+
+        return round(wind, 1)
+    except Exception as e:
+
+        return None
+
+def clean_wind_direction(direction):
+    try:
+        if direction is None:
+            return None
+        
+        DIRECTION_TO_DEGREES = {
+            'N': 0.0,
+            'NNE': 22.5,
+            'NE': 45.0,
+            'ENE': 67.5,
+            'E': 90.0,
+            'ESE': 112.5,
+            'SE': 135.0,
+            'SSE': 157.5,
+            'S': 180.0,
+            'SSW': 202.5,
+            'SW': 225.0,
+            'WSW': 247.5,
+            'W': 270.0,
+            'WNW': 292.5,
+            'NW': 315.0,
+            'NNW': 337.5,
+        }
+
+        match = DIRECTION_TO_DEGREES.get(direction)
+
+        if match is None:
+            return None
+
+        return match
+    except Exception as e:
+
+        return None
+
+def clean_yetos(yetos):
+    try:
+        units = get_units('yetos')
+        
+        if yetos is None or units is None:
+            return None
+
+        yetos, units = set_lower_and_strip(yetos, units)
 
         if units == 'mm':
-            if 'mm' in row:
-                row = float(row.replace('mm', '').strip())
-            elif 'cm' in row:
-                row = float(row.replace('cm', '').strip())
-                row = row * 10  # 1 cm = 10 mm
-            elif 'inches' in row:
-                row = float(row.replace('inches', '').strip())
-                row = row * 25.4  # 1 inch = 25.4 mm
-            elif 'inch' in row:
-                row = float(row.replace('inch', '').strip())
-                row = row * 25.4
-            elif 'in' in row:
-                row = float(row.replace('in', '').strip())
-                row = row * 25.4
+            if 'mm' in yetos:
+                yetos = float(yetos.replace('mm', '').strip())
+            elif 'cm' in yetos:
+                yetos = float(yetos.replace('cm', '').strip())
+                yetos = yetos * 10  # 1 cm = 10 mm
+            elif 'inches' in yetos:
+                yetos = float(yetos.replace('inches', '').strip())
+                yetos = yetos * 25.4  # 1 inch = 25.4 mm
+            elif 'inch' in yetos:
+                yetos = float(yetos.replace('inch', '').strip())
+                yetos = yetos * 25.4
+            elif 'in' in yetos:
+                yetos = float(yetos.replace('in', '').strip())
+                yetos = yetos * 25.4
             else:
-                try:
-                    row = float(row)
-                except Exception:
-                    return None
+                yetos = float(yetos)
 
-    return round(row, 1)
+        return round(yetos, 1)
+    except Exception as e:
 
-def clean_pressure(row, config):
-    units = config['results_units']['barometer'].lower()
-    
-    if row is None or units is None:
         return None
 
-    if row is not None:
-        row = row.lower().strip()
+
+def clean_barometer(barometer):
+    try:
+        units = get_units('barometer')
+        
+        if barometer is None or units is None:
+            return None
+
+        barometer, units = set_lower_and_strip(barometer, units)
 
         if units == 'hpa':
-            try:
-                if 'hpa' in row:
-                    row = float(row.replace('hpa', '').strip())
-                elif 'mb' in row:
-                    row = float(row.replace('mb', '').strip())
-                elif 'mmhg' in row:
-                    row = float(row.replace('mmhg', '').strip())
-                    row = row * 1.33322
-                elif 'inhg' in row:
-                    row = float(row.replace('inhg', '').strip())
-                    row = row * 33.8639
-                elif 'in' in row:
-                    row = float(row.replace('in', '').strip())
-                    row = row * 33.8639
-                else:
-                    row = float(row)
-            except Exception:
-                logging.error(f"ERROR (preprocessing): clean pressure failed.")
+            if 'hpa' in barometer:
+                barometer = float(barometer.replace('hpa', '').strip())
+            elif 'mb' in barometer:
+                barometer = float(barometer.replace('mb', '').strip())
+            elif 'mmhg' in barometer:
+                barometer = float(barometer.replace('mmhg', '').strip())
+                barometer = barometer * 1.33322
+            elif 'inhg' in barometer:
+                barometer = float(barometer.replace('inhg', '').strip())
+                barometer = barometer * 33.8639
+            elif 'in' in barometer:
+                barometer = float(barometer.replace('in', '').strip())
+                barometer = barometer * 33.8639
+            else:
+                barometer = float(barometer)
 
-                return None
+        return round(barometer, 1)
+    except Exception as e:
+                # logging.error(f"ERROR (preprocessing): clean barometer failed.")
 
-    return round(row, 1)
+        return None
 
-def open_csv():
-    config = load_config()
+def check_header(header):
+    try:    
+        items = []
 
-    for key, value in config['preprocessing'].items():
-        staging_path = value['staging']
-        cleaned_path = value['cleaned']
-        failed_path = value['failed']
+        for item in config['weather_live_basic_data']:
+            items.append(item)
 
-        with open(staging_path, encoding = 'utf-8') as staging_file:
-            reader = csv.reader(staging_file)
-            header = next(reader, None)
+        for item in config['weather_live_conditions_measurements']:
+            items.append(item)
 
-            if not header:
-                logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
-                continue
+        if not header == items:
+            return items
 
-        if not os.path.exists(failed_path) or os.path.getsize(failed_path) == 0:
-            with open(failed_path, 'w', encoding = 'utf-8', newline = '') as failed:
-                csv.writer(failed).writerow(header)
+        return header
+    except Exception as e:
 
-        with open(staging_path, encoding = 'utf-8') as staging_file, \
-             open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
-             open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as clean_file:
+        return None
 
-            reader = csv.reader(staging_file)
-            next(reader, None)
+def generate_path(path, now):
+    year = now.strftime("%Y")
+    month = now.strftime("%m")
+    day = now.strftime("%d")
 
-            writer_failed = csv.writer(failed_file)
-            writer_cleaned = csv.writer(clean_file)
+    directory_path = f"{path}/{year}/{month}/{day}.csv"
 
-            if clean_file.tell() == 0:
-                writer_cleaned.writerow(header)
+    directory = os.path.dirname(directory_path)
+    os.makedirs(directory, exist_ok = True)
+    file_is_new = not os.path.exists(directory_path) or os.path.getsize(directory_path) == 0
+    
+    if file_is_new:
+        return True, directory_path 
 
-            for row in reader:
-                if not any(cell.strip() for cell in row):
-                    continue
+    return False, directory_path
 
-                try:
-                    cleaned_row = process_row(row, config, key)
+def init_preprocessing():
+    try:
+        for key, value in config['preprocessing'].items():
+            staging_path = value['staging']
+            cleaned_path = value['cleaned']
+            failed_path = value['failed']
 
-                    if 'null' in cleaned_row or 'None' in cleaned_row or '' in cleaned_row:
-                        writer_failed.writerow(row)
-                        continue
+            with open(staging_path, 'r', encoding = 'utf-8', newline = '') as staging_file:
+                reader = csv.reader(staging_file)
+                header = check_header(next(reader, None))
 
-                    ok = False
+                # if header is None or (len(header) != (len(config['weather_live_basic_data'] + config['weather_live_conditions_measurements']))):
+                #     # logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
+                #     continue
 
-                    for unit in [
-                                    '°C', 'C', '°F', 'F',
-                                    '%',
-                                    'km/h', 'm/s', 'mph', 'bft', 'bf', 'bfr',
-                                    'mm', 'cm', 'in', 'inch', 'inches',
-                                    'hpa', 'mb', 'mmHg', 'inHg'
-                                ]:
-                        
-                        if any(unit in str(cell) for cell in cleaned_row):
-                            writer_failed.writerow(row)
-                            ok = True
-                            break
-                        
-                    if ok is not True:
-                        writer_cleaned.writerow(cleaned_row)
+                now = datetime.now()
 
-                except Exception as e:
-                    logging.error(f"{key}: ERROR (preprocessing): for loop checking all rows -> {e}")
+                check_cleaned, cleaned_path = generate_path(cleaned_path, now)
+                check_failed, failed_path = generate_path(failed_path, now)
 
-                    writer_failed.writerow(row)
+                with open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
+                    open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file:
+
+                    if check_cleaned is True:
+                        csv.writer(cleaned_file).writerow(check_header(None))
+
+                    if check_failed is True:
+                        csv.writer(failed_file).writerow(check_header(None))
+
+                    for row in reader:
+                        try:
+                            cleaned_row, status = process_row(row, key)
+
+                            if status == 'error':
+                                csv.writer(failed_file).writerow(row)
+                            elif status == 'success':
+                                csv.writer(cleaned_file).writerow(cleaned_row)
+                        except Exception as e:
+                            # logging.error(f"{key}: ERROR (preprocessing): for loop checking all rows -> {e}")
+                            # writer_failed.writerow(row)
+                            print(e)
 
                 # time.sleep(1.5)
 
-        with open(staging_path, 'w', encoding = 'utf-8', newline = '') as staging:
-            csv.writer(staging).writerow(header)
+            with open(staging_path, 'w', encoding = 'utf-8', newline = '') as staging:
+                csv.writer(staging).writerow(header)
+    except Exception as e:
 
+        print(e)
+
+def check_cleaned_row(cleaned_row):
+    if 'null' in cleaned_row or None in cleaned_row or '' in cleaned_row:
+        return True
     
-def load_config():
-    # method for loading the configuration file (config.yaml)
-    with open(os.getenv('CONFIG'), 'r') as conf:
-        return yaml.safe_load(conf)
+    for unit in [
+                    '°C', 'C', '°F', 'F',
+                    '%',
+                    'km/h', 'm/s', 'mph', 'bft', 'bf', 'bfr',
+                    'mm', 'cm', 'in', 'inch', 'inches',
+                    'hpa', 'mb', 'mmHg', 'inHg'
+                ]:
+        
+        if any(unit in str(cell) for cell in cleaned_row):
+            return True
 
-open_csv()
+    return False
+
+def set_lower_and_strip(item, unit):
+    return item.lower().strip(), unit.lower().strip()
+
+def get_units(item):
+    return config['results_units'][item]
+
+try:
+    with open(os.getenv('CONFIG'), 'r') as conf:
+        config = yaml.safe_load(conf)
+
+    init_preprocessing()
+except Exception as e:
+    print(e)
