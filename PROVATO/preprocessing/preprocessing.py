@@ -260,12 +260,16 @@ def check_header(header):
 
         return None
 
-def generate_path(path, now):
+def generate_path(path, now, status):
     year = now.strftime("%Y")
     month = now.strftime("%m")
-    day = now.strftime("%d")
 
-    directory_path = f"{path}/{year}/{month}/{day}.csv"
+    if status == 1:
+        day = now.strftime("%d")
+
+        directory_path = f"{path}/{year}/{month}/{day}.csv"
+    else:
+        directory_path = f"{path}/{year}/{month}.csv"
 
     directory = os.path.dirname(directory_path)
     os.makedirs(directory, exist_ok = True)
@@ -293,8 +297,8 @@ def init_preprocessing():
 
                 now = datetime.now()
 
-                check_cleaned, cleaned_path = generate_path(cleaned_path, now)
-                check_failed, failed_path = generate_path(failed_path, now)
+                check_cleaned, cleaned_path = generate_path(cleaned_path, now, 1)
+                check_failed, failed_path = generate_path(failed_path, now, 2)
 
                 with open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
                     open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file:
