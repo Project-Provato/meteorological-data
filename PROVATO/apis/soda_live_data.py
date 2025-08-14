@@ -5,22 +5,37 @@ import os, yaml, requests, csv
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
-def get_weather_sensor_path(xml_data):
-    root = ET.fromstring(xml_data)
+def load_config():
+    try:
+        with open(os.getenv('CONFIG'), 'r') as conf:
+            return yaml.safe_load(conf)
+    except FileNotFoundError as e:
+        print(e)
 
-    for weather_sensor_path in root.findall('.//unita'):
-        if int(weather_sensor_path.get('id')) in config['soda_api_paths']['weather_sensor_id_path']:
-            return weather_sensor_path
-        
-    return None
+def get_weather_sensor_path(xml_data, config):
+    try:
+        root = ET.fromstring(xml_data)
 
-def find_record(measurement_label):
+        for weather_sensor_path in root.findall('.//unita'):
+            if int(weather_sensor_path.get('id')) in config['soda_api_paths']['weather_sensor_id_path']:
+                return weather_sensor_path
+    except Exception as e:
+        print(e)
+
+        return None
+
+def find_record(measurement_label, config):
     barometer_sensor = None
 
-    for sensor in measurement_label.findall('sensore'):
-        if int(sensor.get('id')) in config['soda_api_paths']['barometer']:
-            barometer_sensor = sensor
-            break
+    try:
+        for sensor in measurement_label.findall('sensore'):
+            if int(sensor.get('id')) in config['soda_api_paths']['barometer']:
+                barometer_sensor = sensor
+                break
+    except Exception as e:
+        print(e)
+
+        return None
 
     if barometer_sensor is None:
         return None
@@ -79,7 +94,33 @@ def find_record(measurement_label):
 
     return result, time
 
+def get_paths(station):
+    url = station.get('url')
+
+    path = os.getenv(f'{url}_path')
+    username = os.getenv(f'{url}_username')
+    password = os.getenv(f'{url}_password')
+
+    return path, username, password
+
+def get_basic_data(farms, station, timestamp, now):
+    try:
+        farm = farms
+        source = station['source']
+        timedata = timestamp
+        crawled = now
+        city = station['city']
+        nomos = station['nomos']
+
+        return farm, source, timedata, crawled, city, nomos
+    except Exception as e:
+        print(e)
+
+    return None
+
 def get_data_from_soda():
+    config = load_config()
+
     now = datetime.now()
     start = now - timedelta(hours = 1, minutes = 30)
     
@@ -89,39 +130,29 @@ def get_data_from_soda():
     for farms, farm_data in config.get('farms').items():
         soda_stations = list(filter(lambda find_soda: find_soda.get('code') == config['weather_websites'][0]['code'], farm_data))
 
-        # print(soda_stations)
-
-        if soda_stations is None:
-            return None
+        if not soda_stations:
+            continue
 
         for station in soda_stations:
-            url = station.get('url')
-            path = os.getenv(f'{url}_path')
-            username = os.getenv(f'{url}_username')
-            password = os.getenv(f'{url}_password')
-
-            url = f'{path}?start_date={start_date}&end_date={end_date}&username={username}&password={password}'
-            
-            # print(url)
-
             try:
-                request = requests.get(url, timeout = 10)
+                path, username, password = get_paths(station)
+
+                full_url = f'{path}?start_date={start_date}&end_date={end_date}&username={username}&password={password}'
+
+                # print(url)
+
+                request = requests.get(full_url, timeout = 10)
 
                 if request.status_code == 200:
-                    weather_sensors = get_weather_sensor_path(request.content.decode('utf-8'))
+                    weather_sensors = get_weather_sensor_path(request.content.decode('utf-8'), config)
 
                     if weather_sensors is not None:
-                        record, timestamp = find_record(weather_sensors)
+                        record, timestamp = find_record(weather_sensors, config)
 
                         if record is None or timestamp is None:
                             return None
-                    
-                        farm = farms
-                        source = station['source']
-                        timedata = timestamp
-                        crawled = now
-                        city = station['city']
-                        nomos = station['nomos']
+                        
+                        farm, source, timedata, crawled, city, nomos = get_basic_data(farms, station, timestamp, now)
 
                         all_measurements = {}
 
@@ -133,16 +164,12 @@ def get_data_from_soda():
                         for measurement, _ in config['weather_live_conditions_measurements'].items():
                             all_measurements.update({measurement: record[measurement]})
 
-                        with open(config['preprocessing']['soda']['staging'], 'a', encoding = 'utf-8', newline = '') as staging:
-                            csv.writer(staging).writerow(all_measurements.values())
+                        try:
+                            with open(config['preprocessing']['soda']['staging'], 'a', encoding = 'utf-8', newline = '') as staging:
+                                csv.writer(staging).writerow(all_measurements.values())
+                        except FileNotFoundError as e:
+                            print(e)
             except Exception as e:
-                print(f'Request failed: {e}')
+                print(e)
 
-try:
-    with open(os.getenv('CONFIG'), 'r') as conf:
-        config = yaml.safe_load(conf)
-    
-    get_data_from_soda()
-except Exception as e:
-    print(e)
-
+get_data_from_soda()
