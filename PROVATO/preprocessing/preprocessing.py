@@ -52,6 +52,9 @@ def clean_timedata(timedata, source):
         elif source == 'soda':
             dt = datetime.strptime(timedata, "%Y-%m-%d %H:%M:%S")
             cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+        
+        if cleaned is None:
+            return timedata
 
         return cleaned
     except Exception as e:
