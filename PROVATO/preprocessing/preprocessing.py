@@ -170,7 +170,7 @@ def clean_wind_direction(direction):
         match = DIRECTION_TO_DEGREES.get(direction)
 
         if match is None:
-            return None
+            return direction
 
         return match
     except Exception as e:
