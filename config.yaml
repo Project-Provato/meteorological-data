@@ -109,6 +109,20 @@ farms:
       source: Meteo
       station_number: 2
 
+    - url: OPEN_METEO_FARM2
+      city: Πάπαρης
+      nomos: Αρκαδίας
+      code: openmeteo
+      source: OpenMeteo
+      station_number: 3
+
+    - url: OPEN_WEATHER_MAP_FARM2
+      city: Πάπαρης
+      nomos: Αρκαδίας
+      code: openweathermap
+      source: OpenWeatherMap
+      station_number: 4
+
   farm3: # Agricultural University, Athens, Greece
 
     - url: https://penteli.meteo.gr/stations/athens/
