@@ -1,15 +1,16 @@
 from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
-import scrapy, os, yaml, re
+import scrapy, os, re
 from datetime import datetime as dt
 
-class Meteo_Live_Data(scrapy.Spider):
+from ..export.main import WeatherData
+
+class WU_Live_Data(scrapy.Spider, WeatherData):
     name = os.path.splitext(os.path.basename(__file__))[0] # specifies the spider name, using the file name without the .py extension
 
     def __init__(self):
-        # loads the configuration file during class initialization
-        self.config = self.load_config()
+        WeatherData.__init__(self)
 
     def parse(self, response): 
         # for every website we scrape, requests are initiated via the 'start_requests' method and each response is processed and returned via the 'parse' method
@@ -20,9 +21,6 @@ class Meteo_Live_Data(scrapy.Spider):
         start_scraping = self.init_scraping_data(response)
         
         yield from self.yield_all_items(start_scraping)
-
-    def yield_all_items(self, all_measurements):
-        yield all_measurements
 
     # def init_check_station_availability(self, response):
     #     # checks if station is offline or online 
@@ -36,36 +34,24 @@ class Meteo_Live_Data(scrapy.Spider):
     def init_scraping_data(self, response):
         # this is the method that initializes the basic data and measurements to be retrieved from weather-underground
         # it checks from the config if we can retrieve the basic data and the measurement. If it is true, all the basic data and all the measurements for each station are collected using the 'get_data_from_wu' method
-        source = response.meta['source']
-        farm = response.meta['farm']
-        timedata = self.get_day_and_hour(response)
-        crawled = dt.now()
-        city = response.meta['city']
-        nomos = response.meta['nomos']
+        self.init_get_stations(2)
+        
+        self.set_farm(response.meta['farm'])
+        self.set_source(response.meta['source'])
+        self.set_timedata(self.get_day_and_hour(response))
+        self.set_city(response.meta['city'])
+        self.set_nomos(response.meta['nomos'])
 
-        all_measurements = {}
+        self.run_basic()
 
-        if self.config['get_weather_basic_data'] is True:
-            all_measurements = {
-                key: locals()[key] for key in self.config['weather_live_basic_data']
-            }
+        self.run_measurements_scraping(response)
 
-        for measurement, alternative_names in self.config['weather_live_conditions_measurements'].items():
-            measurement_data = self.get_data_from_wu(response, measurement, alternative_names)
-
-            if measurement_data is None:
-                continue
-
-            all_measurements.update(
-                {measurement: measurement_data}
-            )
-
-        return all_measurements
+        return self.all_measurements
     
     def get_day_and_hour(self, response):
         return response.xpath(self.config['weather-underground_live_data_paths']['get_day_and_hour']).get()
     
-    def get_data_from_wu(self, response, measurement, measurement_alternative_names):
+    def get_data(self, response, measurement, measurement_alternative_names):
         measurement = measurement.lower()
         measurement_alternative_names = [word.lower() for word in measurement_alternative_names]
 
@@ -83,12 +69,13 @@ class Meteo_Live_Data(scrapy.Spider):
         # https://en.wikipedia.org/wiki/Compass_rose
         # https://stackoverflow.com/questions/7490660/converting-wind-direction-in-angles-to-text-words
         path = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
+        
         match_with_path = re.search(r'rotate\(([\d.]+)deg\)', path)
 
         if match_with_path is None:
             return None
 
-        return float(match_with_path.group(1)) # degrees
+        return {measurement: float(match_with_path.group(1))} # degrees
     
     def get_value_and_unit(self, response, measurement):
         value = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
@@ -103,31 +90,13 @@ class Meteo_Live_Data(scrapy.Spider):
 
         if unit is None and measurement == 'wind':
             unit = 'mph'
+            
+        print({measurement: f'{value}{unit}'})
 
-        return f"{value + unit}"
-    
-    def load_config(self):
-        # method for loading the configuration file (config.yaml)
-        with open(os.getenv('CONFIG'), 'r') as conf:
-            return yaml.safe_load(conf)
+        return {measurement: f'{value}{unit}'}
         
     def start_requests(self):
         # method where scraping begins in scrapy
-        # we check in the config in the farms field, which farm has weather-underground as the source, and we scrape using its URL
+        # we check in the config in the farms field, which farm has meteo as the source, and we scrape using its URL
         # we provide the url, source, and city through the meta, so that we can use them as values for the basic fields we have defined for scraping. These basic data are defined in the config and set in the 'init_scraping_data' method
-        for farm, farm_data in self.config.get('farms').items():
-            websites = self.config['weather_websites']
-
-            wu_stations = list(filter(lambda find_wu: find_wu.get('code') == websites[1]['code'], farm_data))
-
-            if wu_stations is None:
-                return
-            
-            for station in wu_stations:                
-                meta_data = {}
-                
-                for item in self.config['weather_live_basic_data']:
-                    meta_data.update( {item: farm} ) if item == 'farm' else meta_data.update( {item: station.get(item)} )
-                
-                yield scrapy.Request(station.get('url'), self.parse, meta = meta_data)
-
+        yield from self.exporter_start_requests(1, scrapy.Request)

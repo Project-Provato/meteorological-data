@@ -4,36 +4,67 @@ load_dotenv() # load environment variables
 import csv, yaml, os, logging, re, json
 from datetime import datetime
 
-# # --- TODO ---
-# logging.basicConfig(
-#     filename = '../../logger.txt',
-#     level = logging.INFO,
-#     format = '[%(asctime)s] %(levelname)s | Preprocessing | %(message)s',
-#     encoding = 'utf-8'
-# )
+from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
+from metpy.units import units
+import numpy as np
 
 def process_row(row, source, config):
     if check_row_length(row, config) is True:
+        # logging.error(f"Line 17: Error with row length")/
         return row, {'error': 'check row length'}
     
-    row[0] = clean_farm_number(row[0], config)
-    row[2] = clean_timedata(row[2], source)
+
+    row[0], farm_status = clean_farm(row[0], config)
+    row[1], source_status = clean_source(row[1])
+    row[2], timedata__status = clean_timedata(row[2], source)
+    row[3], crawled_status = clean_crawled(row[3])
+    row[4], city_status = clean_city(row[4])
+    row[5], nomos_status = clean_nomos(row[5])
+
     row[6] = clean_temperature(row[6], config)
     row[7] = clean_humidity(row[7], config)
     row[8] = clean_wind_speed(row[8], config)
     row[9] = clean_wind_direction(row[9])
     row[10] = clean_yetos(row[10], config)
     row[11] = clean_barometer(row[11], config)
+    row[12] = clean_dew_point(row[12], config)
+    row[13] = clean_heat_index(row[13], row[6]['temperature'], row[7]['humidity'], config)
+    row[14] = clean_wind_chill(row[14], row[6]['temperature'], row[8]['wind'], config)
+    row[15] = clean_solar_radiation(row[15], config)
 
-    check_cleaned = check_cleaned_row(row)
+    if farm_status is False or source_status is False or timedata__status is False or crawled_status is False or city_status is False or nomos_status is False:
+        return row, {'error': 'basic data'}
 
-    if check_cleaned is None:
-        return row, {'error': 'check cleaned'}
+    if check_cleaned_row(row, config) is False:
+        # logging.error(f"Line 31: Error with cleaning checker")
+        return row, {'error': 'measurements'}
 
     return row, {'success': 'ok'}
 
 def check_row_length(row, config):
     return True if len(row) != (len(config['weather_live_basic_data']) + len(config['weather_live_conditions_measurements'])) else False
+
+def clean_farm(farm, config):
+    try:
+        if not 'farm' in farm:
+            return None
+
+        cleaned_farm = farm.split('farm')
+
+        if cleaned_farm is None or not len(cleaned_farm) == 2 or not 0 <= int(cleaned_farm[1]) <= len(config['farms']):
+            return None
+
+        return {'farm': cleaned_farm[1]}, True
+    except Exception as e:
+        print(e)
+
+        return {'farm': farm}, False
+
+def clean_source(source):
+    if source is None or not source:
+        return {'source': source}, False
+    
+    return {'source': source}, True
 
 def clean_timedata(timedata, source):
     try:
@@ -42,7 +73,9 @@ def clean_timedata(timedata, source):
 
         cleaned = None
 
-        if source == 'wu':
+        if source == 'open-meteo':
+            return timedata, True
+        elif source == 'wu':
             timedata = timedata.replace('EEST', '').strip()
             row_time = datetime.strptime(timedata, "%I:%M %p on %B %d, %Y")
             cleaned = row_time.strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -54,29 +87,30 @@ def clean_timedata(timedata, source):
             cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
         
         if cleaned is None:
-            return timedata
+            return timedata, False
 
-        return cleaned
+        return {'timedata': cleaned}, True
     except Exception as e:
         # logging.error(f"Error with time converter ({source}): {timedata} -> {e}")
-        
-        return None
+        return {'timedata': timedata}, False
 
-def clean_farm_number(farm, config):
-    try:
-        if not 'farm' in farm:
-            return None
+def clean_crawled(crawled):
+    if crawled is None or not crawled:
+        return {'crawled': crawled}, False
 
-        farm = farm.split('farm')
+    return {'crawled': crawled}, True
 
-        if farm is None or not len(farm) == 2 or not 0 <= int(farm[1]) <= len(config['farms']):
-            return None
+def clean_city(city):
+    if city is None or not city:
+        return {'city': city}, False
 
-        return farm[1]
-    except Exception as e:
-        print(e)
+    return {'city': city}, True
 
-        return None
+def clean_nomos(nomos):
+    if nomos is None or not nomos:
+        return {'nomos': nomos}, False
+
+    return {'nomos': nomos}, True
 
 def clean_temperature(temperature, config):
     try:
@@ -87,16 +121,20 @@ def clean_temperature(temperature, config):
 
         temperature, units = set_lower_and_strip(temperature, units)
 
+        check = check_value(temperature)
+
         if 'f' in temperature and units == 'c':
             temperature = temperature.replace('f', '').strip()
-            temperature = round((float(temperature) - 32) / 1.8, 1)
+
+            if check is True:
+                temperature = round((float(temperature) - 32) / 1.8, 1)
         elif 'c' in temperature and units == 'c':
             temperature = temperature.replace('°c', '').strip()
 
-        return temperature
+        return {'temperature': temperature}
     except Exception as e:
         # logging.error(f"Temperature cleaning failed: 'temperature': {temperature} | 'units': {units} -> {e}")
-        print(e)
+        print('aaa', e)
         return None
 
 def clean_humidity(humidity, config):
@@ -111,10 +149,10 @@ def clean_humidity(humidity, config):
         if '%' in humidity and units == '%':
             humidity = humidity.replace('%', '').strip()
 
-        return humidity
+        return {'humidity': humidity}
     except Exception as e:
         # logging.error(f"Humidity cleaning failed: 'humidity': {temperature} | 'units': {units} -> {e}")
-        print(e)
+        print('2', e)
         return None
 
 def clean_wind_speed(wind, config):
@@ -126,21 +164,28 @@ def clean_wind_speed(wind, config):
 
         wind, units = set_lower_and_strip(wind, units)
 
+        check = check_value(wind)
+
         if units == 'km/h':
             if 'km/h' in wind:
-                wind = float(wind.replace('km/h', '').strip())
+                wind = wind.replace('km/h', '').strip()
             elif 'mph' in wind:
-                wind = float(wind.replace('mph', '').strip())
-                wind = wind * 1.60934  # mph → km/h
-            elif 'm/s' in wind:
-                wind = float(wind.replace('m/s', '').strip())
-                wind = wind * 3.6      # m/s → km/h
-            else:
-                wind = float(wind)
+                wind = wind.replace('mph', '').strip()
 
-        return round(wind, 1)
+                if check is True:
+                    wind = wind * 1.60934  # mph → km/h
+            elif 'm/s' in wind:
+                wind = wind.replace('m/s', '').strip()
+
+                if check is True:
+                    wind = wind * 3.6      # m/s → km/h
+
+        if check is False:
+            return {'wind': wind}
+
+        return {'wind': round(float(wind), 1)}
     except Exception as e:
-        print(e)
+        print('3', e)
         return None
 
 def clean_wind_direction(direction):
@@ -170,14 +215,19 @@ def clean_wind_direction(direction):
             'NNW': 337.5,
         }
 
-        match = DIRECTION_TO_DEGREES.get(direction)
+        check = check_value(direction)
 
-        if match is None:
-            return direction
+        if check is True:
+            match = DIRECTION_TO_DEGREES.get(direction)
+            
+            if match is None:
+                return {'direction': direction}
 
-        return match
+            return {'direction': match}
+
+        return {'direction': direction}
     except Exception as e:
-
+        print('4', e)
         return None
 
 def clean_yetos(yetos, config):
@@ -189,27 +239,38 @@ def clean_yetos(yetos, config):
 
         yetos, units = set_lower_and_strip(yetos, units)
 
+        check = check_value(yetos)
+
         if units == 'mm':
             if 'mm' in yetos:
-                yetos = float(yetos.replace('mm', '').strip())
+                yetos = yetos.replace('mm', '').strip()
             elif 'cm' in yetos:
-                yetos = float(yetos.replace('cm', '').strip())
-                yetos = yetos * 10  # 1 cm = 10 mm
+                yetos = yetos.replace('cm', '').strip()
+                
+                if check is True:
+                    yetos = yetos * 10  # 1 cm = 10 mm
             elif 'inches' in yetos:
-                yetos = float(yetos.replace('inches', '').strip())
-                yetos = yetos * 25.4  # 1 inch = 25.4 mm
+                yetos = yetos.replace('inches', '').strip()
+                
+                if check is True:
+                    yetos = yetos * 25.4  # 1 inch = 25.4 mm
             elif 'inch' in yetos:
-                yetos = float(yetos.replace('inch', '').strip())
-                yetos = yetos * 25.4
+                yetos = yetos.replace('inch', '').strip()
+                
+                if check is True:
+                    yetos = yetos * 25.4
             elif 'in' in yetos:
-                yetos = float(yetos.replace('in', '').strip())
-                yetos = yetos * 25.4
-            else:
-                yetos = float(yetos)
+                yetos = yetos.replace('in', '').strip()
+                
+                if check is True:
+                    yetos = yetos * 25.4
 
-        return round(yetos, 1)
+        if check is False:
+            return {'yetos': yetos}
+
+        return {'yetos': round(float(yetos), 1)}
     except Exception as e:
-
+        print('5', e)
         return None
 
 def clean_barometer(barometer, config):
@@ -221,28 +282,108 @@ def clean_barometer(barometer, config):
 
         barometer, units = set_lower_and_strip(barometer, units)
 
+        check = check_value(barometer)
+
         if units == 'hpa':
             if 'hpa' in barometer:
-                barometer = float(barometer.replace('hpa', '').strip())
+                barometer = barometer.replace('hpa', '').strip()
             elif 'mb' in barometer:
-                barometer = float(barometer.replace('mb', '').strip())
+                barometer = barometer.replace('mb', '').strip()
             elif 'mmhg' in barometer:
-                barometer = float(barometer.replace('mmhg', '').strip())
-                barometer = barometer * 1.33322
+                barometer = barometer.replace('mmhg', '').strip()
+                
+                if check is True:
+                    barometer = barometer * 1.33322
             elif 'inhg' in barometer:
-                barometer = float(barometer.replace('inhg', '').strip())
-                barometer = barometer * 33.8639
-            elif 'in' in barometer:
-                barometer = float(barometer.replace('in', '').strip())
-                barometer = barometer * 33.8639
-            else:
-                barometer = float(barometer)
+                barometer = barometer.replace('inhg', '').strip()
 
-        return round(barometer, 1)
+                if check is True:
+                    barometer = barometer * 33.8639
+            elif 'in' in barometer:
+                barometer = barometer.replace('in', '').strip()
+
+                if check is True:
+                    barometer = barometer * 33.8639
+
+        if check is False:
+            return {'barometer': barometer}
+
+        return {'barometer': round(float(barometer), 1)}
     except Exception as e:
                 # logging.error(f"ERROR (preprocessing): clean barometer failed.")
-
+        print('6', e)
         return None
+
+def clean_dew_point(dew_point, config):
+    if dew_point is None or not dew_point:
+        return {'dew_point': dew_point}
+
+    units = get_units('dew_point', config)
+    dew_point, units = set_lower_and_strip(dew_point, units)
+
+    if 'c' in dew_point and units == 'c':
+        dew_point = dew_point.replace('°c', '').strip()
+
+    return {'dew_point': dew_point}
+
+def clean_heat_index(heat, temperature, humidity, config):
+    if heat is None or not heat:
+        return {'heat_index': heat}
+    
+    units_local = get_units('heat_index', config)
+    heat, units_local = set_lower_and_strip(heat, units_local)
+
+    if 'c' in heat and units_local == 'c':
+        heat = heat.replace('°c', '').strip()
+
+        if check_value(heat) is False or check_value(temperature) is False or check_value(humidity) is False:
+            return {'heat_index': heat}
+
+        temp = float(temperature) * units.degC
+        hum = float(humidity) * units.percent
+
+        if float(temperature) >= 26 and float(humidity) >= 40:
+            new = implement_heat_index(temp, hum)
+
+            return {'heat_index': new.to('degC').magnitude.squeeze()}
+        
+    return {'heat_index': None}
+    
+def clean_wind_chill(wind_chill, temperature, wind_speed, config):
+    if wind_chill is None or not wind_chill:
+        return {'wind_chill': wind_chill}
+    
+    units_local = get_units('wind_chill', config)
+    wind_chill, units_local = set_lower_and_strip(wind_chill, units_local)
+
+    if 'c' in wind_chill and units_local == 'c':
+        wind_chill = wind_chill.replace('°c', '').strip()
+
+        if check_value(wind_chill) is False or check_value(temperature) is False or check_value(wind_speed) is False:
+            return {'wind_chill': wind_chill}
+
+        temp = float(temperature) * units.degC
+        wind_sp = float(wind_speed) * units.kph
+
+        if float(temperature) <= 10 and float(wind_speed) >= 4.8:
+            new = implement_windchill(temp, wind_sp)
+
+            return {'wind_chill': new.to('degC').m}
+
+    return {'wind_chill': None}
+
+def clean_solar_radiation(solar_radiation, config):
+    if solar_radiation is None or not solar_radiation:
+        return {'solar_radiation': None}
+
+    units = get_units('solar_radiation', config)
+
+    solar_radiation, units = set_lower_and_strip(solar_radiation, units)
+
+    if 'w/m²' in solar_radiation and units == 'w/m²':
+        solar_radiation = solar_radiation.replace('w/m²', '').strip()
+
+    return {'solar_radiation': solar_radiation}
 
 def check_header(header, config):
     try:
@@ -254,7 +395,7 @@ def check_header(header, config):
         for item in config['weather_live_conditions_measurements']:
             items.append(item)
 
-        if not header == items:
+        if header is None or not header == items:
             return items
 
         return header
@@ -301,22 +442,33 @@ def init_preprocessing():
         config = load_config()
 
         for key, value in config['preprocessing'].items():
+            if key != 'open-meteo':
+                continue
+
+            raw_path = value['raw']
             staging_path = value['staging']
             cleaned_path = value['cleaned']
             failed_path = value['failed']
+
+            print('test1')
 
             with open(staging_path, 'r', encoding = 'utf-8', newline = '') as staging_file:
                 reader = csv.reader(staging_file)
                 header = check_header(next(reader, None), config)
 
                 # if header is None or (len(header) != (len(config['weather_live_basic_data'] + config['weather_live_conditions_measurements']))):
-                #     # logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
+                    # logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
                 #     continue
+
+                print('test2')
 
                 now = datetime.now()
 
                 check_cleaned, cleaned_path = generate_path(cleaned_path, now, 1)
-                check_failed, failed_path = generate_path(failed_path, now, 2)
+                check_failed, failed_path = generate_path(failed_path, now, 1)
+                check_raw, raw_path = generate_path(raw_path, now, 1)
+
+                print('test3')
 
                 with open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
                     open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file:
@@ -325,7 +477,15 @@ def init_preprocessing():
                         csv.writer(cleaned_file).writerow(check_header(None, config))
 
                     for row in reader:
+                        with open(raw_path, 'a', encoding = 'utf-8', newline = '') as raw_file:
+                            if check_raw is True:
+                                csv.writer(raw_file).writerow(check_header(None, config))
+                                check_raw = False
+
+                            csv.writer(raw_file).writerow(row)
+
                         cleaned_row, status = process_row(row, key, config)
+                        print(cleaned_row, status)
 
                         if next(iter(status)) == 'error':
                             if check_failed is True:
@@ -334,38 +494,51 @@ def init_preprocessing():
                             # if 'last timedata' in status['error']:
                             #     csv.writer(failed_file).writerow(cleaned_row)
 
-                            csv.writer(failed_file).writerow(row)
+                            csv.writer(failed_file).writerow([list(item.values())[0] for item in row])
                         elif next(iter(status)) == 'success':
-                            csv.writer(cleaned_file).writerow(cleaned_row)
-
-                # time.sleep(1.5)
+                            csv.writer(cleaned_file).writerow([list(item.values())[0] for item in cleaned_row])
 
             with open(staging_path, 'w', encoding = 'utf-8', newline = '') as staging:
                 csv.writer(staging).writerow(header)
+
     except Exception as e:
 
         print(e)
 
-def check_cleaned_row(cleaned_row):
-    if 'null' in cleaned_row or None in cleaned_row or '' in cleaned_row:
+def check_value(value):
+    if isinstance(value, (int, float)):
         return True
-    
-    # for item in cleaned_row:
-    #     if re.search(r'[^0-9\-\:\.]', str(item)):
-    #         return True
 
-    for unit in [
-                    '°C', 'C', '°F', 'F',
-                    '%',
-                    'km/h', 'm/s', 'mph', 'bft', 'bf', 'bfr',
-                    'mm', 'cm', 'in', 'inch', 'inches',
-                    'hpa', 'mb', 'mmHg', 'inHg', 
-                    'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
-                ]:
+    try:
+        float(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
-        if any(unit in str(cell) for cell in cleaned_row):
-            return True
+def check_cleaned_row(cleaned_row, config):
+    if 'null' in cleaned_row or None in cleaned_row or '' in cleaned_row:
+        return False
 
-    return False
+    for row in cleaned_row:
+        for k, v in row.items():
+            if k == 'temperature' or k == 'humidity' or k == 'wind' or k == 'yetos' or k == 'barometer' or k == 'dew_point':
+                if check_value(v) is False:
+                    return False
+            elif k == 'heat_index' or k == 'wind_chill' or k == 'solar_radiation':
+                if check_value(v) is False and v is not None:
+                    return False
+
+    # for unit in [
+    #                 '°C', 'C', '°F', 'F',
+    #                 '%',
+    #                 'km/h', 'm/s', 'mph', 'bft', 'bf', 'bfr',
+    #                 'mm', 'cm', 'in', 'inch', 'inches',
+    #                 'hpa', 'mb', 'mmHg', 'inHg'
+    #             ]:
+
+    #     if any(unit in str(cell) for cell in cleaned_row):
+    #         return False
+
+    return True
 
 init_preprocessing()

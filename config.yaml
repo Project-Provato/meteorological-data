@@ -45,9 +45,13 @@ weather_live_conditions_measurements:
   temperature: [temperature, temperature_2m, temp]
   humidity: [humidity, relative_humidity_2m]
   wind: [wind, wind_speed, speed, wind_speed_10m]
-  direction: [wind, wind_direction, direction, wind_direction_10m, deg]
+  direction: [wind_direction, direction, wind_direction_10m, deg]
   yetos: [yetos, rainfall, today's rain, today's_rain, rain]
   barometer: [pressure, barometer, surface_pressure]
+  dew_point: [dew_point, dew point]
+  heat_index: [heat_index, heat index]
+  wind_chill: [wind_chill, wind chill]
+  solar_radiation: [solar_radiation, solar radiation]
 
 soda_api_paths:
   weather_sensor_id_path: [17]
@@ -58,14 +62,22 @@ soda_api_paths:
   barometer: [Pressione atmosferica, barometer, pressure, 2]
   humidity: [Umidità aria, humidity, 10]
   yetos: [Pioggia, yetos, 11]
+  dew_point: [dew_point, dew point, Σημείο Δρόσου, 15]
+  heat_index: [heat_index, heat index]
+  wind_chill: [wind_chill, wind chill]
+  solar_radiation: [solar_radiation, solar radiation]
 
 results_units:
-  temperature: C # C = celsius
+  temperature: c # C = celsius
   humidity: '%' # 
   wind: km/h #
   direction: null
   yetos: mm #
   barometer: hpa #
+  dew_point: c
+  heat_index: c #
+  wind_chill: c
+  solar_radiation: W/m²
 
 # farms information
 # each station must include 'url', 'source', and 'city' fields
@@ -116,12 +128,12 @@ farms:
       source: OpenMeteo
       station_number: 3
 
-    - url: OPEN_WEATHER_MAP_FARM2
-      city: Πάπαρης
-      nomos: Αρκαδίας
-      code: openweathermap
-      source: OpenWeatherMap
-      station_number: 4
+    # - url: OPEN_WEATHER_MAP_FARM2
+    #   city: Πάπαρης
+    #   nomos: Αρκαδίας
+    #   code: openweathermap
+    #   source: OpenWeatherMap
+    #   station_number: 4
 
   farm3: # Agricultural University, Athens, Greece
 
@@ -146,32 +158,32 @@ farms:
       source: Meteo
       station_number: 3
 
-    - url: https://www.wunderground.com/weather/IAEGAL9
-      city: Αιγάλεω
-      nomos: Αττικής
-      code: wu
-      source: WeatherUnderground
-      station_number: 4
+    # - url: https://www.wunderground.com/weather/IAEGAL9
+    #   city: Αιγάλεω
+    #   nomos: Αττικής
+    #   code: wu
+    #   source: WeatherUnderground
+    #   station_number: 4
   
   farm4:
 
-    - url: https://www.wunderground.com/weather/gr/poullitsa/IPOULL5
-      city: Πουλίτσα
-      nomos: Κορινθίας
-      code: wu
-      source: WeatherUnderground
-      station_number: 1
-
-    - url: https://penteli.meteo.gr/stations/assos/
-      city: Άσσος
-      nomos: Κορινθίας
+    - url: https://penteli.meteo.gr/stations/levidi/
+      city: Λεβίδι
+      nomos: Αρκαδίας
       code: meteo
       source: Meteo
+      station_number: 1
+
+    - url: SODA_FARM4_STATION2
+      city: Κάψια
+      nomos: Αρκαδίας
+      code: soda
+      source: SoDa
       station_number: 2
 
-    - url: https://www.wunderground.com/weather/gr/moulki/IMOULK1
-      city: Μούλκι
-      nomos: Κορινθίας
+    - url: https://www.wunderground.com/weather/gr/kapsas/IKAPSA2
+      city: Κάψια
+      nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
       station_number: 3
@@ -218,32 +230,39 @@ weather-underground_live_data_paths:
 preprocessing:
   meteo:
     staging: data/meteo/staging.csv
+    raw: data/meteo/raw
     cleaned: data/meteo/cleaned
     failed: data/meteo/failed
     
   wu:
     staging: data/wu/staging.csv
+    raw: data/wu/raw
     cleaned: data/wu/cleaned
     failed: data/wu/failed
 
   soda:
     staging: data/soda/staging.csv
+    raw: data/soda/raw
     cleaned: data/soda/cleaned
     failed: data/soda/failed
 
   open-meteo:
     staging: data/open-meteo/staging.csv
+    raw: data/open-meteo/raw
     cleaned: data/open-meteo/cleaned
     failed: data/open-meteo/failed
 
-  open-weather-map:
-    staging: data/open-weather-map/staging.csv
-    cleaned: data/open-weather-map/cleaned
-    failed: data/open-weather-map/failed
+  # open-weather-map:
+  #   staging: data/open-weather-map/staging.csv
+  #   raw: data/open-weather-map/raw
+  #   cleaned: data/open-weather-map/cleaned
+  #   failed: data/open-weather-map/failed
 
 commands: # .../PROVATO$
   meteo: scrapy crawl meteo_live_data -o data/meteo/staging.csv
   wu: scrapy crawl wu_live_data -o data/wu/staging.csv
-  soda: python3 apis/soda_live_data.py
-  openmeteo: python3 apis/open-meteo_live_data.py
-  openweathermap: python3 apis/open-weather-map_live_data.py
+  soda: python3 -m apis.soda_live_data
+  openmeteo: python3 -m apis.open-meteo_live_data
+  # openweathermap: python3 -m apis.open-weather-map_live_data
+
+  preprocessing: python3 preprocessing/preprocessing.py

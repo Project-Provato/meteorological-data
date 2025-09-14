@@ -4,25 +4,24 @@ load_dotenv() # load environment variables
 import scrapy, os, yaml
 from datetime import datetime as dt
 
-class Meteo_Live_Data(scrapy.Spider):
+from ..export.main import WeatherData
+
+class Meteo_Live_Data(scrapy.Spider, WeatherData):
     name = os.path.splitext(os.path.basename(__file__))[0] # specifies the spider name, using the file name without the .py extension
 
     def __init__(self):
-        # loads the configuration file during class initialization
-        self.config = self.load_config()
+        WeatherData.__init__(self)
 
-    def parse(self, response): 
+    def parse(self, response):
         # for every website we scrape, requests are initiated via the 'start_requests' method and each response is processed and returned via the 'parse' method
+        
         if self.config['check_station_availability'] is True:
             if self.init_check_station_availability(response) is True:
                 return
             
         start_scraping = self.init_scraping_data(response)
-        
-        yield from self.yield_all_items(start_scraping)
 
-    def yield_all_items(self, all_measurements):
-        yield all_measurements
+        yield from self.yield_all_items(start_scraping)
 
     def init_check_station_availability(self, response):
         # checks if station is offline or online 
@@ -35,32 +34,24 @@ class Meteo_Live_Data(scrapy.Spider):
     def init_scraping_data(self, response):
         # this is the method that initializes the basic data and measurements to be retrieved from meteo
         # it checks from the config if we can retrieve the basic data and the measurement. If it is true, all the basic data and all the measurements for each station are collected using the 'get_data_from_meteo' method
+        # self.init_get_stations(2)
+        
+        self.set_farm(response.meta['farm'])
+        self.set_source(response.meta['source'])
+        self.set_timedata(self.get_day_and_hour(response))
+        self.set_city(response.meta['city'])
+        self.set_nomos(response.meta['nomos'])
 
-        source = response.meta['source']
-        farm = response.meta['farm']
-        timedata = self.get_day_and_hour(response)
-        crawled = dt.now()
-        city = response.meta['city']
-        nomos = response.meta['nomos']
+        self.run_basic()
 
-        if self.config['get_weather_basic_data'] is True:
-            all_measurements = {
-                key: locals()[key]
-                for key in self.config['weather_live_basic_data']
-            }
+        self.run_measurements_scraping(response)
 
-        if self.config['get_weather_measurements'] is True:
-            for measurement, measurement_alternative_names in self.config['weather_live_conditions_measurements'].items():
-                result = self.get_data_from_meteo(response, measurement, measurement_alternative_names) # returned data: {'measurement': 'value'}
+        return self.all_measurements
 
-                if result is not None:
-                    all_measurements.update(result)
-
-        return all_measurements
-
-    def get_data_from_meteo(self, response, measurement, measurement_alternative_names):
+    def get_data(self, response, measurement, measurement_alternative_names):
         # this is the method where we retrieve the measurements from meteo
         # we check if the data from meteo contains the words that we have specified in the config, in the 'weather_live_conditions_measurements' field
+        
         measurement = measurement.lower()
 
         for row in self.get_path(response):
@@ -93,29 +84,9 @@ class Meteo_Live_Data(scrapy.Spider):
     def get_day_and_hour(self, response):
         # method for extracting the day and hour from the meteo table
         return response.xpath(self.config['meteo_live_data_paths']['get_day_and_hour']).get()
-    
-    def load_config(self):
-        # method for loading the configuration file (config.yaml)
-        with open(os.getenv('CONFIG'), 'r') as conf:
-            return yaml.safe_load(conf)
-        
+
     def start_requests(self):
         # method where scraping begins in scrapy
         # we check in the config in the farms field, which farm has meteo as the source, and we scrape using its URL
         # we provide the url, source, and city through the meta, so that we can use them as values for the basic fields we have defined for scraping. These basic data are defined in the config and set in the 'init_scraping_data' method
-        for farm, farm_data in self.config.get('farms').items():
-            meteo_stations = list(filter(lambda find_meteo: find_meteo.get('code') == self.config['weather_websites'][2]['code'], farm_data))
-
-            if meteo_stations is None:
-                return
-            
-            for station in meteo_stations:
-                meta_data = {}
-                
-                for item in self.config['weather_live_basic_data']:
-                    meta_data.update( {item: farm} ) if item == 'farm' else meta_data.update( {item: station.get(item)} )
-                
-                yield scrapy.Request(station.get('url'),
-                                    self.parse,
-                                    meta = meta_data)
-
+        yield from self.exporter_start_requests(2, scrapy.Request)

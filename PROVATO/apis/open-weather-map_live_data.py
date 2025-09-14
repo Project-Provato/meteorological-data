@@ -1,130 +1,109 @@
-from dotenv import load_dotenv
-load_dotenv() # load environment variables
+# from dotenv import load_dotenv
+# load_dotenv() # load environment variables
 
-import os, yaml, requests, csv, json
-from datetime import datetime
+# import os, requests, csv, json
+# from datetime import datetime
 
-def load_config():
-    with open(os.getenv('CONFIG'), 'r') as conf:
-        return yaml.safe_load(conf)
+# from exporter.main import WeatherData
 
-def check_staging_csv(path):
-    try:
-        file_is_new = not os.path.exists(path) or os.path.getsize(path) == 0
-        
-        return True if file_is_new is True else False
-    except Exception as e:
-        print(e)
-        return False
+# class OpenWeatherMap(WeatherData):
+#     def __init__(self):
+#         WeatherData.__init__(self)
 
-def check_header(header, config):
-    try:    
-        items = []
+#     def check_staging_csv(self, path):
+#         try:
+#             file_is_new = not os.path.exists(path) or os.path.getsize(path) == 0
+            
+#             return True if file_is_new is True else False
+#         except Exception as e:
+#             print(e)
+#             return False
 
-        for item in config['weather_live_basic_data']:
-            items.append(item)
+#     def check_header(self, header, config):
+#         try:    
+#             items = []
 
-        for item in config['weather_live_conditions_measurements']:
-            items.append(item)
+#             for item in config['weather_live_basic_data']:
+#                 items.append(item)
 
-        if not header == items:
-            return items
+#             for item in config['weather_live_conditions_measurements']:
+#                 items.append(item)
 
-        return header
-    except Exception as e:
-        print(e)
-        return None
+#             if not header == items:
+#                 return items
 
-def get_unit(measurement):
-    try:
-        if measurement is None:
-            return None
+#             return header
+#         except Exception as e:
+#             print(e)
+#             return None
 
-        UNITS = {
-            'temp': '°C',
-            'humidity': '%',
-            'speed': 'km/h',
-            'deg': '°',
-            'rain': 'mm',
-            'pressure': 'hpa'
-        }
+#     def get_unit(self, measurement):
+#         try:
+#             if measurement is None:
+#                 return None
 
-        if UNITS.get(measurement) is None:
-            return None
+#             UNITS = {
+#                 'temp': '°C',
+#                 'humidity': '%',
+#                 'speed': 'km/h',
+#                 'deg': '°',
+#                 'rain': 'mm',
+#                 'pressure': 'hpa'
+#             }
 
-        return UNITS.get(measurement)
-    except Exception as e:
-        print(e)
+#             if UNITS.get(measurement) is None:
+#                 return None
 
-def find_record(contents, alternative_names, units):
-    try:
-        for item in alternative_names:
-            if units == 'metric':
-                if item in ['temp', 'humidity', 'pressure']:
-                    return f'{contents['main'][item]}{get_unit(item)}' if contents.get('main', None) is not None and contents.get('main', None).get(item, None) is not None else f'{0.0}{get_unit(item)}'
+#             return UNITS.get(measurement)
+#         except Exception as e:
+#             print(e)
 
-                if item in ['speed', 'deg']:
-                    return f'{contents['wind'][item]}{get_unit(item)}' if contents.get('wind', None) is not None and contents.get('wind', None).get(item, None) is not None else f'{0.0}{get_unit(item)}'
+#     def get_data(self, contents, station):
+#         self.set_farm(station.get('farm'))
+#         self.set_source(station.get('source'))
+#         self.set_timedata(datetime.fromtimestamp(contents['dt']).strftime("%Y-%m-%d %H:%M:%S.%f"))
+#         self.set_city(station.get('city'))
+#         self.set_nomos(station.get('nomos'))
 
-                if item == 'rain':
-                    return f'{contents[item]['1h']}{get_unit(item)}' if contents.get(item, None) is not None and contents.get(item, None).get('1h', None) is not None else f'{0.0}{get_unit(item)}'
-            else:
-                return None
-    except Exception as e:
-        print(e)
+#         self.run_basic()
 
-    return None
+#         units = None
+#         if 'metric' in os.getenv(station.get('url')):
+#             units = 'metric'
 
-def get_data_from_open_weather_map():
-    try:
-        config = load_config()
-        
-        for farms, farm_data in config.get('farms').items():
-            openweathermap_stations = list(filter(lambda find_openweathermap: find_openweathermap.get('code') == config['weather_websites'][4]['code'], farm_data))
+#         for name, all_alternative_names in self.get_config()['weather_live_conditions_measurements'].items():
+#             for item in all_alternative_names:
+#                 data = None
 
-            if not openweathermap_stations:
-                continue
+#                 if units == 'metric':
+#                     if item in ['temp', 'humidity', 'pressure']:
+#                         data = f'{contents['main'][item]}{self.get_unit(item)}' if contents.get('main', None) is not None and contents.get('main', None).get(item, None) is not None else f'{0.0}{self.get_unit(item)}'
+#                     elif item in ['speed', 'deg']:
+#                         data = f'{contents['wind'][item]}{self.get_unit(item)}' if contents.get('wind', None) is not None and contents.get('wind', None).get(item, None) is not None else f'{0.0}{self.get_unit(item)}'
+#                     elif item == 'rain':
+#                         data = f'{contents[item]['1h']}{self.get_unit(item)}' if contents.get(item, None) is not None and contents.get(item, None).get('1h', None) is not None else f'{0.0}{self.get_unit(item)}'
 
-            for station in openweathermap_stations:
-                # print(os.getenv(station.get('url')))
+#                 if data is None:
+#                     continue
 
-                request = requests.get(os.getenv(station.get('url')), timeout = 10)
+#                 self.set_measurements({name: data})
 
-                if request.status_code == 200:
-                    contents = json.loads(request.content.decode('utf-8'))
+#     def parse(self):
+#         self.init_get_stations(4)
 
-                    units = None
-                    if 'units=metric' in os.getenv(station.get('url')):
-                        units = 'metric'
+#         for request, station in self.exporter_start_requests_api():
+#             contents = json.loads(request.content.decode('utf-8'))
 
-                    farm = farms
-                    source = station['source']
-                    timedata = datetime.fromtimestamp(contents['dt']).strftime("%Y-%m-%d %H:%M:%S.%f")
-                    crawled = datetime.now()
-                    city = station['city']
-                    nomos = station['nomos']
+#             self.get_data(contents, station)
 
-                    all_measurements = {}
+#             staging_path = self.get_config()['preprocessing']['open-weather-map']['staging']
+#             is_new = self.check_staging_csv(staging_path)
 
-                    if config['get_weather_basic_data'] is True:
-                        all_measurements = {
-                            key: locals()[key] for key in config['weather_live_basic_data']
-                        }
+#             with open(staging_path, 'a', encoding = 'utf-8', newline = '') as staging:
+#                 if is_new is True:
+#                     csv.writer(staging).writerow(self.check_header(None))
 
-                    for measurement, alternative_names in config['weather_live_conditions_measurements'].items():
-                        all_measurements.update({measurement: find_record(contents, alternative_names, units)})
+#                 csv.writer(staging).writerow(self.get_all_measurements().values())
 
-                    print(all_measurements)
-
-                    staging_path = config['preprocessing']['open-weather-map']['staging']
-                    is_new = check_staging_csv(staging_path)
-
-                    with open(staging_path, 'a', encoding = 'utf-8', newline = '') as staging:
-                        if is_new is True:
-                            csv.writer(staging).writerow(check_header(None, config))
-
-                        csv.writer(staging).writerow(all_measurements.values())
-    except Exception as e:
-        print(e)
-
-get_data_from_open_weather_map()
+# test = OpenWeatherMap()
+# test.parse()
