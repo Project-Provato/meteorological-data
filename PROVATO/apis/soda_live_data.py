@@ -28,9 +28,12 @@ class Soda_Live_Data(WeatherData):
 
         try:
             for sensor in measurement_label.findall('sensore'):
-                if int(sensor.get('id')) in self.config['soda_api_paths']['barometer']:
-                    barometer_sensor = sensor
-                    break
+                barometer = self.config['weather_live_conditions_measurements']['barometer']
+
+                for possible_names in barometer:
+                    if isinstance(possible_names, int) and (int(sensor.get('id')) == possible_names):
+                        barometer_sensor = sensor
+                        break
         except Exception as e:
             print(e)
 
@@ -50,16 +53,17 @@ class Soda_Live_Data(WeatherData):
         tolerance = timedelta(minutes = 1, seconds = 30)
         time = None
     
-        for key, possible_names in self.config['soda_api_paths'].items():
+        for key, possible_names in self.config['weather_live_conditions_measurements'].items():
             found = False
-            if 17 in possible_names: # (id)
-                continue
 
             for sensors in measurement_label.findall('sensore'):
                 id_sensor = int(sensors.get('id'))
                 unit = sensors.get('unita')
 
-                if id_sensor in possible_names:
+                for possible_name in possible_names:
+                    if not (isinstance(possible_name, int) and id_sensor == possible_name):
+                        continue
+
                     value = None
                     min_time_difference = None
 

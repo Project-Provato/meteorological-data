@@ -70,7 +70,12 @@ class Meteo_Live_Data(scrapy.Spider, WeatherData):
                 return {measurement: f"{value[0] + value[1]}"}
             
             if 'direction' in measurement and label == 'wind' and 'direction' in measurement_alternative_names:
-                return {measurement: value.split(' ')[3]}
+                value = value.split(' ')[3]
+
+                if self.all_measurements['wind'] == 0.0:
+                    return {measurement: 0.0}
+
+                return {measurement: value}
             
             if label not in measurement_alternative_names:
                 continue

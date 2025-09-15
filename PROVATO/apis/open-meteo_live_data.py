@@ -42,7 +42,6 @@ class OpenMeteo(WeatherData):
     def run(self, current, units):
         for item in current:
             for name, all_alternative_names in self.config['weather_live_conditions_measurements'].items():
-
                 for alternative_name in all_alternative_names:
                     if alternative_name == item:
                         yield name, f'{current[item]}{units[item]}'
@@ -79,14 +78,12 @@ class OpenMeteo(WeatherData):
             self.set_nomos(station.get('nomos'))
 
             self.run_basic()
-            self.run_measurements_api(None, data)
+            self.run_measurements_api_without_name(data)
 
             self.set_measurements({'dew_point': None})
             self.set_measurements({'heat_index': None})
             self.set_measurements({'wind_chill': None})
             self.set_measurements({'solar_radiation': None})
-
-            print(self.all_measurements)
 
             staging_path = self.config['preprocessing']['open-meteo']['staging']
             is_new = self.check_staging_csv(staging_path)

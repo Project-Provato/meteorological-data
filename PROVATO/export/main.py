@@ -115,13 +115,18 @@ class WeatherData(ABC):
 
     def run_measurements_api(self, name, record):
         if self.config['get_weather_measurements'] is True:
-            if name is None:
-                self.set_measurements(record)
-
             for measurement, _ in self.config['weather_live_conditions_measurements'].items():
                 if measurement == name:
                     self.set_measurements({measurement: record})
                     break
+
+    def run_measurements_api_without_name(self, record):
+        if self.config['get_weather_measurements'] is True:
+            for measurement, _ in self.config['weather_live_conditions_measurements'].items():
+                for item in record:
+                    if item == measurement:
+                        self.set_measurements({measurement: record[item]})
+                        break
 
     def yield_all_items(self, all_measurements_values):
         yield all_measurements_values

@@ -42,30 +42,16 @@ weather_live_basic_data:
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
 weather_live_conditions_measurements:
-  temperature: [temperature, temperature_2m, temp]
-  humidity: [humidity, relative_humidity_2m]
-  wind: [wind, wind_speed, speed, wind_speed_10m]
-  direction: [wind_direction, direction, wind_direction_10m, deg]
-  yetos: [yetos, rainfall, today's rain, today's_rain, rain]
-  barometer: [pressure, barometer, surface_pressure]
-  dew_point: [dew_point, dew point]
+  temperature: [temperature, temperature_2m, temp, Temperatura aria, 9]
+  humidity: [humidity, relative_humidity_2m, Umidità aria, 10]
+  wind: [wind, wind_speed, speed, wind_speed_10m, Velocità vento, 8]
+  direction: [wind_direction, direction, wind_direction_10m, deg, Direzione vento, 3]
+  yetos: [yetos, rainfall, today's rain, today's_rain, rain, Pioggia, 11]
+  barometer: [pressure, barometer, surface_pressure, Pressione atmosferica, 2]
+  dew_point: [dew_point, dew point, Punto di rugiada, 15]
   heat_index: [heat_index, heat index]
   wind_chill: [wind_chill, wind chill]
-  solar_radiation: [solar_radiation, solar radiation]
-
-soda_api_paths:
-  weather_sensor_id_path: [17]
-
-  temperature: [Temperatura aria, temperature, 9]
-  direction: [Direzione vento, direction, 3]
-  wind: [Velocità vento, wind, 8]
-  barometer: [Pressione atmosferica, barometer, pressure, 2]
-  humidity: [Umidità aria, humidity, 10]
-  yetos: [Pioggia, yetos, 11]
-  dew_point: [dew_point, dew point, Σημείο Δρόσου, 15]
-  heat_index: [heat_index, heat index]
-  wind_chill: [wind_chill, wind chill]
-  solar_radiation: [solar_radiation, solar radiation]
+  solar_radiation: [solar_radiation, solar radiation, Radiazione solare, 7]
 
 results_units:
   temperature: c # C = celsius
@@ -77,7 +63,7 @@ results_units:
   dew_point: c
   heat_index: c #
   wind_chill: c
-  solar_radiation: W/m²
+  solar_radiation: w/m², w/m^2
 
 # farms information
 # each station must include 'url', 'source', and 'city' fields
@@ -207,25 +193,32 @@ weather-underground_live_data_paths:
     value: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span/text()'
     unit: './/span[contains(@class,"test-true wu-unit wu-unit-temperature is-degree-visible")]/span[@class="wu-label"]/span[2]/text()'
   
-  direction:
-    value: './/div[contains(@class,"wind-compass")]/@style'
-    unit: null
+  humidity:
+    value: './/span[contains(@class,"test-false wu-unit wu-unit-humidity")]/span/text()'
+    unit: './/span[@class="test-false wu-unit wu-unit-humidity"]/span[@class="wu-label"]/span[2]/text()'
 
   wind:
     value: './/header[@class="wind-speed"]/strong/text()'
     unit: './/span[@class="test-false wu-unit wu-unit-speed"]/span[@class="wu-label"]/span[2]/text()'
-  
-  humidity:
-    value: './/span[contains(@class,"test-false wu-unit wu-unit-humidity")]/span/text()'
-    unit: './/span[@class="test-false wu-unit wu-unit-humidity"]/span[@class="wu-label"]/span[2]/text()'
+
+  direction:
+    value: './/div[contains(@class,"wind-compass")]/@style'
+    unit: null
+
+  yetos:
+    value: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span/text()'
+    unit: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span[@class="wu-label"]/span[2]/text()'
 
   barometer:
     value: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span/text()'
     unit: './/span[contains(@class,"test-false wu-unit wu-unit-pressure")]/span[@class="wu-label"]/span[2]/text()'
 
-  yetos:
-    value: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span/text()'
-    unit: './/span[contains(@class,"test-false wu-unit wu-unit-rain")]/span[@class="wu-label"]/span[2]/text()'
+  dew_point:
+    value: './/span[@class="test-false wu-unit wu-unit-temperature"]/span/text()'
+    unit: './/span[@class="test-false wu-unit wu-unit-temperature"]/span[@class="wu-label"]/span[2]/text()'
+
+soda_api_paths:
+  weather_sensor_id_path: [17]
 
 preprocessing:
   meteo:

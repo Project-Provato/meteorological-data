@@ -53,7 +53,7 @@ class WU_Live_Data(scrapy.Spider, WeatherData):
     
     def get_data(self, response, measurement, measurement_alternative_names):
         measurement = measurement.lower()
-        measurement_alternative_names = [word.lower() for word in measurement_alternative_names]
+        measurement_alternative_names = [isinstance(word, str) and word.lower() for word in measurement_alternative_names]
 
         for item in self.config['weather-underground_live_data_paths']:
             if not item in measurement_alternative_names:
@@ -81,17 +81,15 @@ class WU_Live_Data(scrapy.Spider, WeatherData):
         value = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['value']).get()
 
         if value is None:
-            return None
-        
+            return {measurement: None}
+
         if self.config['weather-underground_live_data_paths'][measurement]['unit'] is None:
-            return value
-        
+            return {measurement: value}
+
         unit = response.xpath(self.config['weather-underground_live_data_paths'][measurement]['unit']).get()
 
         if unit is None and measurement == 'wind':
             unit = 'mph'
-            
-        print({measurement: f'{value}{unit}'})
 
         return {measurement: f'{value}{unit}'}
         
