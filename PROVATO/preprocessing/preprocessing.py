@@ -483,28 +483,24 @@ def init_preprocessing():
                 check_raw, raw_path = generate_path(raw_path, now, 1)
 
                 with open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
-                    open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file:
+                    open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file, \
+                    open(raw_path, 'a', encoding = 'utf-8', newline = '') as raw_file:
 
                     if check_cleaned is True:
                         csv.writer(cleaned_file).writerow(check_header(None, config))
 
-                    for row in reader:
-                        with open(raw_path, 'a', encoding = 'utf-8', newline = '') as raw_file:
-                            if check_raw is True:
-                                csv.writer(raw_file).writerow(check_header(None, config))
-                                check_raw = False
+                    if check_failed is True:
+                        csv.writer(failed_file).writerow(check_header(None, config))
+                            
+                    if check_raw is True:
+                        csv.writer(raw_file).writerow(check_header(None, config))
 
-                            csv.writer(raw_file).writerow(row)
+                    for row in reader:
+                        csv.writer(raw_file).writerow(row)
 
                         cleaned_row, status = process_row(row, key, config)
 
                         if next(iter(status)) == 'error':
-                            if check_failed is True:
-                                csv.writer(failed_file).writerow(check_header(None, config))
-
-                            # if 'last timedata' in status['error']:
-                            #     csv.writer(failed_file).writerow(cleaned_row)
-
                             csv.writer(failed_file).writerow([list(item.values())[0] for item in row])
                         elif next(iter(status)) == 'success':
                             csv.writer(cleaned_file).writerow([list(item.values())[0] for item in cleaned_row])
