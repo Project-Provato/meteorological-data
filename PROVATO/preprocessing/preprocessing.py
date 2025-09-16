@@ -82,15 +82,15 @@ def clean_timedata(timedata, source):
         elif source == 'wu':
             timedata = timedata.replace("EEST", "").strip()
             dt = datetime.strptime(timedata, "%I:%M %p on %B %d, %Y")
-            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
 
         elif source == 'meteo':
             dt = datetime.strptime(timedata, "%d/%m/%Y %H:%M")
-            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
 
         elif source == 'soda':
             dt = datetime.strptime(timedata, "%Y-%m-%d %H:%M:%S")
-            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
         
         if cleaned is None:
             return {'timedata': timedata}, False
