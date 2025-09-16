@@ -2,11 +2,12 @@ from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
 import csv, yaml, os, logging, re, json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
 from metpy.units import units
-import numpy as np
+
+from zoneinfo import ZoneInfo
 
 def process_row(row, source, config):
     if check_row_length(row, config) is True:
@@ -71,18 +72,25 @@ def clean_timedata(timedata, source):
 
         cleaned = None
 
+        athens = ZoneInfo("Europe/Athens")
+
         if source == 'open-meteo':
-            return {'timedata': timedata}, True
+            dt = datetime.fromtimestamp(int(timedata), tz=ZoneInfo("UTC"))
+            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+            return {"timedata": cleaned}, True
+
         elif source == 'wu':
-            timedata = timedata.replace('EEST', '').strip()
-            row_time = datetime.strptime(timedata, "%I:%M %p on %B %d, %Y")
-            cleaned = row_time.strftime("%Y-%m-%d %H:%M:%S.%f")
+            timedata = timedata.replace("EEST", "").strip()
+            dt = datetime.strptime(timedata, "%I:%M %p on %B %d, %Y")
+            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+
         elif source == 'meteo':
             dt = datetime.strptime(timedata, "%d/%m/%Y %H:%M")
-            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
+
         elif source == 'soda':
             dt = datetime.strptime(timedata, "%Y-%m-%d %H:%M:%S")
-            cleaned = dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+            cleaned = dt.astimezone(athens).strftime("%Y-%m-%d %H:%M:%S.%f")
         
         if cleaned is None:
             return {'timedata': timedata}, False
@@ -190,7 +198,7 @@ def clean_wind_direction(direction):
         if '°' in direction:
             direction = direction.replace('°', '').strip()
             return {'direction': float(direction)}
-
+        
         if check_value(direction) is True:
             return {'direction': float(direction)}
 
@@ -320,7 +328,7 @@ def clean_dew_point(dew_point, config):
             dew_point_new = dew_point_new.replace('°c', '').strip()
 
         if check_value(dew_point_new) is False:
-            return {'dew_point': None}
+            return {'dew_point': dew_point}
 
         return {'dew_point': float(dew_point_new)}
     except Exception as e:
@@ -476,7 +484,7 @@ def init_preprocessing():
                     # logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
                 #     continue
 
-                now = datetime.now()
+                now = datetime.now(ZoneInfo("Europe/Athens"))
 
                 check_cleaned, cleaned_path = generate_path(cleaned_path, now, 1)
                 check_failed, failed_path = generate_path(failed_path, now, 1)
@@ -529,11 +537,9 @@ def check_cleaned_row(cleaned_row):
         for k, v in row.items():
             if k == 'temperature' or k == 'humidity' or k == 'wind' or k == 'direction' or k == 'yetos' or k == 'barometer':
                 if check_value(v) is False:
-                    print('test1')
                     return False
             elif k == 'heat_index' or k == 'wind_chill' or k == 'solar_radiation' or k == 'dew_point':
                 if check_value(v) is False and v is not None:
-                    print('test2')
                     return False
 
     # for unit in [

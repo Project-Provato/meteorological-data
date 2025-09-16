@@ -4,14 +4,16 @@ load_dotenv() # load environment variables
 import yaml, os, requests, logging
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+from zoneinfo import ZoneInfo
 
 class WeatherData(ABC):
     def __init__(self):
         self._farm = None
         self._source = None
         self._timedata = None
-        self._crawled = datetime.now()
+        self._crawled = datetime.now(ZoneInfo("Europe/Athens"))
         self._city = None
         self._nomos = None
         

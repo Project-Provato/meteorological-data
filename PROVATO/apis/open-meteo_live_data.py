@@ -73,7 +73,7 @@ class OpenMeteo(WeatherData):
 
             self.set_farm(station.get('farm'))
             self.set_source(station.get('source'))
-            self.set_timedata(datetime.fromtimestamp(contents['current']['time']).strftime("%Y-%m-%d %H:%M:%S.%f"))
+            self.set_timedata(contents['current']['time'])
             self.set_city(station.get('city'))
             self.set_nomos(station.get('nomos'))
 
