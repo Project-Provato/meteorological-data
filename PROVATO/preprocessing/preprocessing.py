@@ -264,6 +264,8 @@ def clean_yetos(yetos, config):
                 if check_value(yetos_new) is True:
                     yetos_new = float(yetos_new) * 25.4
 
+            return {'yetos': 0.0}
+
         if check_value(yetos_new) is False:
             return {'yetos': yetos}
 
