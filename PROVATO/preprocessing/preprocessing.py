@@ -24,7 +24,7 @@ def process_row(row, source, config):
     row[6] = clean_temperature(row[6], config)
     row[7] = clean_humidity(row[7], config)
     row[8] = clean_wind_speed(row[8], config)
-    row[9] = clean_wind_direction(row[9])
+    row[9] = clean_wind_direction(row[9], row[8]['wind'])
     row[10] = clean_yetos(row[10], config)
     row[11] = clean_barometer(row[11], config)
     row[12] = clean_dew_point(row[12], config)
@@ -190,7 +190,7 @@ def clean_wind_speed(wind, config):
         print('3', e)
         return {'wind': wind}
 
-def clean_wind_direction(direction):
+def clean_wind_direction(direction, wind_speed):
     try:
         if direction is None:
             return {'direction': direction}
@@ -201,6 +201,10 @@ def clean_wind_direction(direction):
         
         if check_value(direction) is True:
             return {'direction': float(direction)}
+        
+        if check_value(direction) is False:
+            if int(wind_speed) == 0.0:
+                return {'direction': -1}
 
         DIRECTION_TO_DEGREES = {
             'N': 0.0,
@@ -330,7 +334,7 @@ def clean_dew_point(dew_point, config):
             dew_point_new = dew_point_new.replace('°c', '').strip()
 
         if check_value(dew_point_new) is False:
-            return {'dew_point': dew_point}
+            return {'dew_point': 0.0}
 
         return {'dew_point': float(dew_point_new)}
     except Exception as e:
