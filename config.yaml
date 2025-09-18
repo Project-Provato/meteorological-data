@@ -222,24 +222,28 @@ soda_api_paths:
 
 preprocessing:
   meteo:
+    last_data: data/meteo/last_data.csv
     staging: data/meteo/staging.csv
     raw: data/meteo/raw
     cleaned: data/meteo/cleaned
     failed: data/meteo/failed
     
   wu:
+    last_data: data/wu/last_data.csv
     staging: data/wu/staging.csv
     raw: data/wu/raw
     cleaned: data/wu/cleaned
     failed: data/wu/failed
 
   soda:
+    last_data: data/soda/last_data.csv
     staging: data/soda/staging.csv
     raw: data/soda/raw
     cleaned: data/soda/cleaned
     failed: data/soda/failed
 
   open-meteo:
+    last_data: data/open-meteo/last_data.csv
     staging: data/open-meteo/staging.csv
     raw: data/open-meteo/raw
     cleaned: data/open-meteo/cleaned

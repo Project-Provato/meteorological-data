@@ -1,24 +1,22 @@
 from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
-import csv, yaml, os, logging, re, json
+import csv, yaml, os, logging, time, numpy as np, psycopg2
 from datetime import datetime, timezone
 
 from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
 from metpy.units import units
 
-import numpy as np
-
 from zoneinfo import ZoneInfo
 
-def process_row(row, source, config):
+def process_row(row, source, config, last_data_path):
     if check_row_length(row, config) is True:
         # logging.error(f"Line 17: Error with row length")/
         return row, {'error': 'check row length'}
 
     row[0], farm_status = clean_farm(row[0], config)
     row[1], source_status = clean_source(row[1])
-    row[2], timedata__status = clean_timedata(row[2], source)
+    row[2], timedata__status = clean_timedata(row[2], source, last_data_path)
     row[3], crawled_status = clean_crawled(row[3])
     row[4], city_status = clean_city(row[4])
     row[5], nomos_status = clean_nomos(row[5])
@@ -67,13 +65,12 @@ def clean_source(source):
     
     return {'source': source}, True
 
-def clean_timedata(timedata, source):
+def clean_timedata(timedata, source, last_data_path):
     try:
         if timedata is None or source is None:
             return {'timedata': timedata}, False
 
         cleaned = None
-
         athens = ZoneInfo("Europe/Athens")
 
         if source == 'open-meteo':
@@ -96,7 +93,15 @@ def clean_timedata(timedata, source):
         
         if cleaned is None:
             return {'timedata': timedata}, False
+        
+        with open(last_data_path, 'r', encoding = 'utf-8', newline = '') as last_data_file:
+            last_data_reader = csv.reader(last_data_file)
+            next(last_data_reader, None)
 
+            for row in last_data_reader:
+                if str(row[0]) == str(cleaned):
+                    return {'timedata': cleaned}, False
+                
         return {'timedata': cleaned}, True
     except Exception as e:
         # logging.error(f"Error with time converter ({source}): {timedata} -> {e}")
@@ -450,6 +455,8 @@ def generate_path(path, now, status):
             directory_path = f"{path}/{year}/{month}/{day}.csv"
         elif status == 2:
             directory_path = f"{path}/{year}/{month}.csv"
+        elif status == 3:
+            directory_path = f"{path}"
 
         directory = os.path.dirname(directory_path)
         os.makedirs(directory, exist_ok = True)
@@ -478,6 +485,7 @@ def init_preprocessing():
         config = load_config()
 
         for key, value in config['preprocessing'].items():
+            last_data_path = value['last_data']
             raw_path = value['raw']
             staging_path = value['staging']
             cleaned_path = value['cleaned']
@@ -485,18 +493,15 @@ def init_preprocessing():
 
             with open(staging_path, 'r', encoding = 'utf-8', newline = '') as staging_file:
                 reader = csv.reader(staging_file)
-
                 header = check_header(next(reader, None), config)
-
-                # if header is None or (len(header) != (len(config['weather_live_basic_data'] + config['weather_live_conditions_measurements']))):
-                    # logging.error(f"ERROR (preprocessing): Empty staging file ({key})")
-                #     continue
 
                 now = datetime.now(ZoneInfo("Europe/Athens"))
 
                 check_cleaned, cleaned_path = generate_path(cleaned_path, now, 1)
                 check_failed, failed_path = generate_path(failed_path, now, 1)
                 check_raw, raw_path = generate_path(raw_path, now, 1)
+                    
+                timedata_table = []
 
                 with open(failed_path, 'a', encoding = 'utf-8', newline = '') as failed_file, \
                     open(cleaned_path, 'a', encoding = 'utf-8', newline = '') as cleaned_file, \
@@ -514,12 +519,20 @@ def init_preprocessing():
                     for row in reader:
                         csv.writer(raw_file).writerow(row)
 
-                        cleaned_row, status = process_row(row, key, config)
+                        cleaned_row, status = process_row(row, key, config, last_data_path)
 
                         if next(iter(status)) == 'error':
                             csv.writer(failed_file).writerow([list(item.values())[0] for item in row])
                         elif next(iter(status)) == 'success':
                             csv.writer(cleaned_file).writerow([list(item.values())[0] for item in cleaned_row])
+
+                        timedata_table.append(cleaned_row[2]['timedata'])
+
+                generate_path(last_data_path, now, 3)
+                with open(last_data_path, 'w', encoding = 'utf-8', newline = '') as last_data_file:
+                    writer = csv.writer(last_data_file)
+                    writer.writerow(['timedata'])                    
+                    writer.writerows([[item] for item in timedata_table])
 
             with open(staging_path, 'w', encoding = 'utf-8', newline = '') as staging:
                 csv.writer(staging).writerow(header)
