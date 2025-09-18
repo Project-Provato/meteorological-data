@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
-import csv, yaml, os, logging, time, numpy as np, psycopg2
+import csv, yaml, os, logging, time, numpy as np
 from datetime import datetime, timezone
 
 from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
@@ -361,7 +361,10 @@ def clean_heat_index(heat, temperature, humidity, config):
             heat = heat.replace('°c', '').strip()
 
             if check_value(temperature) is False or check_value(humidity) is False:
-                return {'heat_index': heat}
+                return {'heat_index': None}
+
+            if check_value(heat) is True and float(heat) == float(temperature):
+                return {'heat_index': None}
 
             temp = float(temperature) * units.degC
             hum = float(humidity) * units.percent
@@ -391,6 +394,9 @@ def clean_wind_chill(wind_chill, temperature, wind_speed, config):
 
             if check_value(wind_chill) is False or check_value(temperature) is False or check_value(wind_speed) is False:
                 return {'wind_chill': wind_chill}
+
+            if check_value(wind_chill) is True and float(wind_chill) == float(temperature):
+                return {'wind_chill': None}
 
             temp = float(temperature) * units.degC
             wind_sp = float(wind_speed) * units.kph
