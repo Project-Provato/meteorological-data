@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
 from metpy.units import units
 
+import numpy as np
+
 from zoneinfo import ZoneInfo
 
 def process_row(row, source, config):
@@ -353,17 +355,18 @@ def clean_heat_index(heat, temperature, humidity, config):
         if 'c' in heat and units_local == 'c':
             heat = heat.replace('°c', '').strip()
 
-            if check_value(heat) is False or check_value(temperature) is False or check_value(humidity) is False:
+            if check_value(temperature) is False or check_value(humidity) is False:
                 return {'heat_index': heat}
 
             temp = float(temperature) * units.degC
             hum = float(humidity) * units.percent
 
-            if float(temperature) >= 26 and float(humidity) >= 40:
-                new = implement_heat_index(temp, hum)
+            new = implement_heat_index(temp, hum)
+            calc = new.to('degC').magnitude.squeeze()
 
-                return {'heat_index': new.to('degC').magnitude.squeeze()}
-            
+            if np.ma.is_masked(calc) is False:
+                return {'heat_index': calc}
+
         return {'heat_index': None}
     except Exception as e:
         # logging.error(f"ERROR (preprocessing):.")
@@ -387,10 +390,11 @@ def clean_wind_chill(wind_chill, temperature, wind_speed, config):
             temp = float(temperature) * units.degC
             wind_sp = float(wind_speed) * units.kph
 
-            if float(temperature) <= 10 and float(wind_speed) >= 4.8:
-                new = implement_windchill(temp, wind_sp)
+            new = implement_windchill(temp, wind_sp)
+            calc = new.to('degC').m
 
-                return {'wind_chill': new.to('degC').m}
+            if np.ma.is_masked(calc) is False:
+                return {'wind_chill': calc}
 
         return {'wind_chill': None}
     except Exception as e:
@@ -474,9 +478,6 @@ def init_preprocessing():
         config = load_config()
 
         for key, value in config['preprocessing'].items():
-            # if key == 'open-meteo':
-            #     continue
-
             raw_path = value['raw']
             staging_path = value['staging']
             cleaned_path = value['cleaned']
@@ -484,6 +485,7 @@ def init_preprocessing():
 
             with open(staging_path, 'r', encoding = 'utf-8', newline = '') as staging_file:
                 reader = csv.reader(staging_file)
+
                 header = check_header(next(reader, None), config)
 
                 # if header is None or (len(header) != (len(config['weather_live_basic_data'] + config['weather_live_conditions_measurements']))):
