@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv() # load environment variables
 
-import csv, yaml, os, logging, time, numpy as np
+import csv, yaml, os, logging, time, numpy as np, psycopg2
 from datetime import datetime, timezone
 
 from metpy.calc import heat_index as implement_heat_index, windchill as implement_windchill
@@ -20,17 +20,20 @@ def process_row(row, source, config, last_data_path):
     row[3], crawled_status = clean_crawled(row[3])
     row[4], city_status = clean_city(row[4])
     row[5], nomos_status = clean_nomos(row[5])
+    row[6] = {'station_number': int(row[6])}
 
-    row[6] = clean_temperature(row[6], config)
-    row[7] = clean_humidity(row[7], config)
-    row[8] = clean_wind_speed(row[8], config)
-    row[9] = clean_wind_direction(row[9], row[8]['wind'])
-    row[10] = clean_yetos(row[10], config)
-    row[11] = clean_barometer(row[11], config)
-    row[12] = clean_dew_point(row[12], config)
-    row[13] = clean_heat_index(row[13], row[6]['temperature'], row[7]['humidity'], config)
-    row[14] = clean_wind_chill(row[14], row[6]['temperature'], row[8]['wind'], config)
-    row[15] = clean_solar_radiation(row[15], config)
+    row[7] = clean_temperature(row[7], config)
+    row[8] = clean_humidity(row[8], config)
+    row[9] = clean_wind_speed(row[9], config)
+    row[10] = clean_wind_direction(row[10], row[9]['wind'])
+    row[11] = clean_yetos(row[11], config)
+    row[12] = clean_barometer(row[12], config)
+    row[13] = clean_dew_point(row[13], config)
+    row[14] = clean_heat_index(row[14], row[7]['temperature'], row[8]['humidity'], config)
+    row[15] = clean_wind_chill(row[15], row[7]['temperature'], row[9]['wind'], config)
+    row[16] = clean_solar_radiation(row[16], config)
+
+    print(row)
     
     if farm_status is False or source_status is False or timedata__status is False or crawled_status is False or city_status is False or nomos_status is False:
         return row, {'error': 'basic data'}
@@ -53,8 +56,19 @@ def clean_farm(farm, config):
 
         if cleaned_farm is None or not len(cleaned_farm) == 2 or not 0 <= int(cleaned_farm[1]) <= len(config['farms']):
             return {'farm': farm}, False
+        
+        int_farm = int(cleaned_farm[1])
+        
+        if int_farm == 1:
+            int_farm = 1
+        elif int_farm == 2:
+            int_farm = 4
+        elif int_farm == 3:
+            int_farm = 2
+        elif int_farm == 4:
+            int_farm = 6
 
-        return {'farm': cleaned_farm[1]}, True
+        return {'farm': int(int_farm)}, True
     except Exception as e:
         print(e)
         return {'farm': farm}, False
@@ -486,9 +500,27 @@ def load_config():
     with open(os.getenv('CONFIG'), 'r') as conf:
         return yaml.safe_load(conf)
 
+def sql_val(v):
+    return 'NULL' if v is None else v
+
 def init_preprocessing():
     try:
         config = load_config()
+
+        # connection = psycopg2.connect(
+        #     host = os.getenv("PG_HOST"),
+        #     port = os.getenv("PG_PORT"),
+        #     dbname = os.getenv("PG_DB"),
+        #     user = os.getenv("PG_USER"),
+        #     password = os.getenv("PG_PASS")
+        # )
+
+        # cursor = connection.cursor()
+
+        # if connection.closed == 0:
+        #     print("ok")
+        # else:
+        #     print("rip")
 
         for key, value in config['preprocessing'].items():
             last_data_path = value['last_data']
@@ -534,6 +566,35 @@ def init_preprocessing():
 
                         timedata_table.append(cleaned_row[2]['timedata'])
 
+                        # time.sleep(5)
+
+                        # try:
+                        #     cursor.execute(f"INSERT INTO meteo_data (station, source, timedata, crawled, temperature, humidity, wind, direction, yetos, barometer, dew_point, heat_index, wind_chill, solar_radiation) \
+                        #                             SELECT meteo_farms.station, \
+                        #                                 '{cleaned_row[1]['source']}', \
+                        #                                 '{cleaned_row[2]['timedata']}', \
+                        #                                 '{cleaned_row[3]['crawled']}', \
+                        #                                 {sql_val(cleaned_row[7]['temperature'])}, \
+                        #                                 {sql_val(cleaned_row[8]['humidity'])}, \
+                        #                                 {sql_val(cleaned_row[9]['wind'])}, \
+                        #                                 {sql_val(cleaned_row[10]['direction'])}, \
+                        #                                 {sql_val(cleaned_row[11]['yetos'])}, \
+                        #                                 {sql_val(cleaned_row[12]['barometer'])}, \
+                        #                                 {sql_val(cleaned_row[13]['dew_point'])}, \
+                        #                                 {sql_val(cleaned_row[14]['heat_index'])}, \
+                        #                                 {sql_val(cleaned_row[15]['wind_chill'])}, \
+                        #                                 {sql_val(cleaned_row[16]['solar_radiation'])} \
+                        #                             FROM meteo_farms, meteo_stations, farms_api \
+                        #                             WHERE meteo_farms.station = meteo_stations.id \
+                        #                                 AND meteo_farms.farm = farms_api.id_api \
+                        #                                 AND meteo_farms.farm = {cleaned_row[0]['farm']} \
+                        #                                 AND meteo_farms.station = {cleaned_row[6]['station_number']};")
+                        #     connection.commit()
+                        # except psycopg2.Error as e:
+                        #     print(e.pgcode, e.pgerror)
+                        #     cursor.close()
+                        #     connection.close()
+
                 generate_path(last_data_path, now, 3)
                 with open(last_data_path, 'w', encoding = 'utf-8', newline = '') as last_data_file:
                     writer = csv.writer(last_data_file)
@@ -542,6 +603,9 @@ def init_preprocessing():
 
             with open(staging_path, 'w', encoding = 'utf-8', newline = '') as staging:
                 csv.writer(staging).writerow(header)
+
+        # cursor.close()
+        # connection.close()
 
     except Exception as e:
         print(e)

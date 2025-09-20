@@ -16,6 +16,7 @@ class WeatherData(ABC):
         self._crawled = datetime.now(ZoneInfo("Europe/Athens"))
         self._city = None
         self._nomos = None
+        self._station_number = None
         
         self._stations = []
 
@@ -73,6 +74,10 @@ class WeatherData(ABC):
     def nomos(self):
         return self._nomos
     
+    @property
+    def station_number(self):
+        return self._station_number
+    
     # ------------------------------------
 
     def set_farm(self, value):
@@ -89,6 +94,9 @@ class WeatherData(ABC):
 
     def set_nomos(self, value):
         self._nomos = value
+
+    def set_station_number(self, value):
+        self._station_number = value
 
     def set_stations(self, stations):
         self._stations.append(stations)

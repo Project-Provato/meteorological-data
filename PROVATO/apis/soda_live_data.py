@@ -100,6 +100,7 @@ class Soda_Live_Data(WeatherData):
             self.set_source(station['source'])
             self.set_city(station['city'])
             self.set_nomos(station['nomos'])
+            self.set_station_number(station['station_number'])
 
             self.run_basic()
 

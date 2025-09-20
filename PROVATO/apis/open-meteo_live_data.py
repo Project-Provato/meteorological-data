@@ -76,6 +76,7 @@ class OpenMeteo(WeatherData):
             self.set_timedata(contents['current']['time'])
             self.set_city(station.get('city'))
             self.set_nomos(station.get('nomos'))
+            self.set_station_number(station['station_number'])
 
             self.run_basic()
             self.run_measurements_api_without_name(data)
