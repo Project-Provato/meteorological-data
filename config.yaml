@@ -37,7 +37,7 @@ weather_live_basic_data:
   - crawled
   - city
   - nomos
-  # - station_number
+  - station_number
 
 # defines the measurements fields collected for each weather record from all websites
 # comment to remove or uncomment to add measurement
@@ -89,7 +89,7 @@ farms:
       nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
-      station_number: 4
+      station_number: 3
 
   farm2: # Paparis, Arkadia, Greece
     
@@ -98,21 +98,21 @@ farms:
       nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
-      station_number: 1
+      station_number: 4
 
     - url: https://penteli.meteo.gr/stations/voutsaras/
       city: Βουτσαράς
       nomos: Αρκαδίας
       code: meteo
       source: Meteo
-      station_number: 2
+      station_number: 5
 
     - url: OPEN_METEO_FARM2
       city: Πάπαρης
       nomos: Αρκαδίας
       code: openmeteo
       source: OpenMeteo
-      station_number: 3
+      station_number: 6
 
     # - url: OPEN_WEATHER_MAP_FARM2
     #   city: Πάπαρης
@@ -128,21 +128,21 @@ farms:
       nomos: Αττικής
       code: meteo
       source: Meteo
-      station_number: 1
+      station_number: 7
 
     - url: https://www.wunderground.com/weather/IATHEN112
       city: Πετράλωνα
       nomos: Αττικής
       code: wu
       source: WeatherUnderground
-      station_number: 2
+      station_number: 8
 
     - url: https://penteli.meteo.gr/stations/peristeri/
       city: Περιστέρι
       nomos: Αττικής
       code: meteo
       source: Meteo
-      station_number: 3
+      station_number: 9
 
     # - url: https://www.wunderground.com/weather/IAEGAL9
     #   city: Αιγάλεω
@@ -158,21 +158,21 @@ farms:
       nomos: Αρκαδίας
       code: meteo
       source: Meteo
-      station_number: 1
+      station_number: 10
 
     - url: SODA_FARM4_STATION2
       city: Κάψια
       nomos: Αρκαδίας
       code: soda
       source: SoDa
-      station_number: 2
+      station_number: 11
 
     - url: https://www.wunderground.com/weather/gr/kapsas/IKAPSA2
       city: Κάψια
       nomos: Αρκαδίας
       code: wu
       source: WeatherUnderground
-      station_number: 3
+      station_number: 12
 
 
 # all paths used for extracting specific information from the meteo website (extracted from the website HTML)
